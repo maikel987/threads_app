@@ -11,16 +11,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUser } from "@/lib/actions/user.actions";
 
 async function Page({ params }: { params: { id: string } }) {
+
   const user = await currentUser();
   if (!user) return null;
 
+
   const userInfo = await fetchUser(params.id);
   if (!userInfo?.onboarded) redirect("/onboarding");
+  
 
   return (
     <section>
       <ProfileHeader
-        accountId={userInfo.id}
+        accountId={userInfo.internal_id}
         authUserId={user.id}
         name={userInfo.name}
         username={userInfo.username}
@@ -59,7 +62,7 @@ async function Page({ params }: { params: { id: string } }) {
               {/* @ts-ignore */}
               <ThreadsTab
                 currentUserId={user.id}
-                accountId={userInfo.id}
+                accountId={userInfo.internal_id}
                 accountType='User'
               />
             </TabsContent>

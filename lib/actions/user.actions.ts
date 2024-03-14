@@ -29,7 +29,7 @@ export async function updateUser({
     connectToDB();
 
     await User.findOneAndUpdate(
-      { id: userId },
+      { internal_id: userId },
       {
         username: username.toLowerCase(),
         name,
@@ -52,10 +52,12 @@ export async function fetchUser(userId: string) {
   try {
     connectToDB();
 
-    return await User.findOne({ id: userId }).populate({
+    let user = await User.findOne({ internal_id : userId }).populate({
       path: "communities",
       model: Community,
     });
+   
+    return user
   } catch (error: any) {
     throw new Error(`Failed to fetch user: ${error.message}`);
   }
@@ -66,7 +68,7 @@ export async function fetchUserPosts(userId: string) {
     connectToDB();
 
     // Find all threads authored by the user with the given userId
-    const threads = await User.findOne({ id: userId }).populate({
+    const threads = await User.findOne({ internal_id: userId }).populate({
       path: "threads",
       model: Thread,
       populate: [
@@ -81,7 +83,7 @@ export async function fetchUserPosts(userId: string) {
           populate: {
             path: "author",
             model: User,
-            select: "name image id", // Select the "name" and "_id" fields from the "User" model
+            select: "name image internal_id", // Select the "name" and "_id" fields from the "User" model
           },
         },
       ],
@@ -118,7 +120,7 @@ export async function fetchUsers({
 
     // Create an initial query object to filter users.
     const query: FilterQuery<typeof User> = {
-      id: { $ne: userId }, // Exclude the current user from the results.
+      internal_id: { $ne: userId }, // Exclude the current user from the results.
     };
 
     // If the search string is not empty, add the $or operator to match either username or name fields.

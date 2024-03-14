@@ -81,7 +81,7 @@ export async function fetchCommunityPosts(id: string) {
         {
           path: "author",
           model: User,
-          select: "name image id", // Select the "name" and "_id" fields from the "User" model
+          select: "name image internal_id", // Select the "name" and "_id" fields from the "User" model
         },
         {
           path: "children",
@@ -174,7 +174,7 @@ export async function addMemberToCommunity(
     }
 
     // Find the user by their unique id
-    const user = await User.findOne({ id: memberId });
+    const user = await User.findOne({ internal_id: memberId });
 
     if (!user) {
       throw new Error("User not found");
@@ -208,7 +208,7 @@ export async function removeUserFromCommunity(
   try {
     connectToDB();
 
-    const userIdObject = await User.findOne({ id: userId }, { _id: 1 });
+    const userIdObject = await User.findOne({ internal_id: userId }, { _id: 1 });
     const communityIdObject = await Community.findOne(
       { id: communityId },
       { _id: 1 }

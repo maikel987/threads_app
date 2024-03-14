@@ -28,6 +28,11 @@ export const sidebarLinks = [
     imgURL: "/assets/user.svg",
     route: "/profile",
     label: "Profile",
+  },  
+  {
+    imgURL: "/assets/apartment.svg",
+    route: "/property",
+    label: "Property",
   },
 ];
 
@@ -41,4 +46,9 @@ export const communityTabs = [
   { value: "threads", label: "Threads", icon: "/assets/reply.svg" },
   { value: "members", label: "Members", icon: "/assets/members.svg" },
   { value: "requests", label: "Requests", icon: "/assets/request.svg" },
+];
+
+export const propertyTabs = [
+  { value: "listings", label: "Listings", icon: "/assets/search.svg" },
+  { value: "property", label: "Property", icon: "/assets/members.svg" },
 ];

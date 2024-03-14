@@ -30,7 +30,7 @@ async function Page({
       <h1 className='head-text'>Communities</h1>
 
       <div className='mt-5'>
-        <Searchbar routeType='communities' />
+        <Searchbar routeType='communities' searchElement="Communities"/>
       </div>
 
       <section className='mt-9 flex flex-wrap gap-4'>

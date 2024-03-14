@@ -13,6 +13,8 @@ const nextConfig = {
       ignoreDuringBuilds: true,
     },
     images: {
+      domains: ['msklbucket.s3.eu-west-3.amazonaws.com'],
+
       remotePatterns: [
         {
           protocol: "https",

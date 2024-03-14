@@ -1,0 +1,151 @@
+"use server";
+import { connectToDB } from "../mongoose";
+
+import Community from "../models/community.model";
+import Thread from "../models/thread.model";
+import User from "../models/user.model";
+
+import Apartment from "../models/apartment.model";
+import Listing from "../models/listing.model";
+import ListingFeatures from "../models/listing_features.model";
+
+import { revalidatePath } from "next/cache";
+
+import { FilterQuery, SortOrder } from "mongoose";
+import mongoose from "mongoose";
+
+interface Params {
+    userId: string;
+    internal_name: string;
+    checkin_process: string;
+    address: string;
+    urgent_number: string;
+  }
+  
+export async function addApartement({
+    userId,
+    internal_name,
+    checkin_process,
+    address,
+    urgent_number,
+  }: Params): Promise<void> {
+    try {
+      connectToDB();
+
+      console.log("userId last",userId);
+
+      const UserIdObject = await User.findOne(
+        { internal_id: userId },
+        { _id: 1 }
+      );
+      console.log("UserIdObject",UserIdObject);
+
+      await Apartment.create({
+        owner : userId,
+        internal_name : internal_name,
+        checkin_process : checkin_process,
+        address : address,
+        urgent_number : urgent_number,
+      })
+  
+    } catch (error: any) {
+      throw new Error(`Failed to create/update apartment: ${error.message}`);
+    }
+  }
+
+export async function getApartment(userId: string) {
+    try {
+        connectToDB();
+
+        const  userApartment = await Apartment.find({owner:userId}).populate({path: 'listings',model: Listing,select:'picture title'}).exec();
+        //const  userApartment = await Apartment.find({owner:userId}).populate({path: 'owner',model: User,select:'bio',}).exec();
+        userApartment.forEach(element => {
+          //console.log(element.listings)
+          
+        });
+
+        return userApartment;
+        } catch (error) {
+        console.error("Error fetching replies: ", error);
+        throw error;
+        }
+    }
+
+    //fetchProperty
+export async function fetchProperties({
+      userId,
+      searchString = "",
+      pageNumber = 1,
+      pageSize = 20,
+      sortBy = "desc",
+    }: {
+      userId: string;
+      searchString?: string;
+      pageNumber?: number;
+      pageSize?: number;
+      sortBy?: SortOrder;
+    }) {
+      try {
+        connectToDB();
+
+        /*test
+        let apt_query = Apartment.find({owner_id:userId})
+        const apt = await apt_query.exec();
+        return { apartments:apt, isNext:true };
+        */
+
+        // Calculate the number of users to skip based on the page number and page size.
+        const skipAmount = (pageNumber - 1) * pageSize;
+
+        // Create a case-insensitive regular expression for the provided search string.
+        const regex = new RegExp(searchString, "i");
+    
+        // Create an initial query object to filter apartment.
+        const query: FilterQuery<typeof Apartment> = {owner__id: userId};
+    
+        // If the search string is not empty, add the $or operator to match either internal name or adress fields.
+        if (searchString.trim() !== "") {
+          query.$or = [
+            { internal_name: { $regex: regex } },
+            { address: { $regex: regex } },
+          ];
+        }
+    
+        // Define the sort options for the fetched users based on createdAt field and provided sort order.
+        const sortOptions = { createdAt: sortBy };
+    
+        const apartmentsQuery = Apartment.find(query)
+          .sort(sortOptions)
+          .skip(skipAmount)
+          .limit(pageSize);
+    
+        // Count the total number of users that match the search criteria (without pagination).
+        const totalApartmentsCount = await Apartment.countDocuments(query);
+    
+        const apartments = await apartmentsQuery.populate({path: 'listings',model: Listing,select:'picture title'}).exec();
+
+        // Check if there are more users beyond the current page.
+        const isNext = totalApartmentsCount > skipAmount + apartments.length;
+
+        return { apartments, isNext };
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        throw error;
+      }
+    }
+
+export async function fetchProperty(apartmentId: string) {
+      try {
+        connectToDB();
+        let apt = await Apartment.findOne({ _id: apartmentId })
+        .populate({path: 'listings',model: Listing,select:'picture title'})
+        .populate({path: 'owner',model: User,select:'internal_id'})
+        .exec();
+        
+        return apt;
+
+      } catch (error: any) {
+        throw new Error(`Failed to fetch user: ${error.message}`);
+      }
+    }
+    
