@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
-  FormField,
+  FormField,  
   FormItem,
   FormLabel,
   FormMessage,
@@ -23,15 +23,22 @@ import { useUploadThing } from "@/lib/uploadthing";
 import { isBase64Image } from "@/lib/utils";
 
 import { UserValidation } from "@/lib/validations/user";
-import { addApartement } from "@/lib/actions/apartment.actions";
+import { addApartement, fetchProperty, updateProperty } from "@/lib/actions/apartment.actions";
 import { ApartmentValidation } from "@/lib/validations/apartment";
 
 interface Props {
   btnTitle: string;
   userId:string;
+  apartment_info:{
+    id:string;
+    address: string;
+    checkin_process: string;
+    internal_name: string;
+    urgent_number: string;
+  };
 }
 
-const ApartmentForm = ({  btnTitle, userId }: Props) => {
+const ApartmentForm = ({  btnTitle, userId, apartment_info }: Props) => {
 
   const router = useRouter();
   const pathname = usePathname();
@@ -42,27 +49,29 @@ const ApartmentForm = ({  btnTitle, userId }: Props) => {
   const form = useForm<z.infer<typeof ApartmentValidation>>({
     resolver: zodResolver(ApartmentValidation),
     defaultValues: {
-        internal_name: "",
-        checkin_process: "",
-        address: "",
-        urgent_number: "",
+        internal_name: apartment_info.internal_name ? apartment_info.internal_name : "",
+        checkin_process: apartment_info.checkin_process ? apartment_info.checkin_process : "",
+        address: apartment_info.address ? apartment_info.address : "",
+        urgent_number: apartment_info.urgent_number ? apartment_info.urgent_number : "",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof ApartmentValidation>) => {
 
-    await addApartement({
+    await updateProperty({
         userId:userId,
+        property_id:apartment_info.id,
         internal_name:values.internal_name,
         checkin_process:values.checkin_process,
         address:values.address,
         urgent_number:values.urgent_number,
+        path:pathname,
     });
 
-    if (pathname === "/profile/edit") {
+    if (pathname === "/property/edit") {
       router.back();
     } else {
-      router.push("/");
+      router.push("/property");
     }
   };
 

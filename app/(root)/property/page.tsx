@@ -46,11 +46,11 @@ async function Page({
       } catch (error) {
         console.error("Error fetching signed URL", error);
         // Ici, vous pouvez laisser la propriété picture telle quelle ou la mettre à jour avec une valeur par défaut
-        property.picture = 'Adresse de l\'image par défaut ou manquante';
+        property.picture = '/assets/missingApt.webp';
       }
     } else {
       // Définition d'une image par défaut si aucune image n'est présente
-      property.picture = 'Adresse de l\'image par défaut ou manquante';
+      property.picture = '/assets/missingApt.webp';
     }
   }
     

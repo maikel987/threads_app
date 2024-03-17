@@ -5,12 +5,14 @@ interface Props {
   internal_name: string;
   address: string;
   picture: string;
+  id:string;
 }
 
 function PropertyHeader({
   internal_name,
   address,
   picture,
+  id,
 }: Props) {
   console.log('picture',picture)
   return (
@@ -33,7 +35,7 @@ function PropertyHeader({
             <p className='text-base-medium text-gray-1'>{address}</p>
           </div>
         </div>
-          <Link href='/property/edit'>
+          <Link href={`/property/edit/${id}`}>
             <div className='flex cursor-pointer gap-3 rounded-lg bg-dark-3 px-4 py-2'>
               <Image
                 src='/assets/edit.svg'

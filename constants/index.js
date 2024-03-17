@@ -33,7 +33,13 @@ export const sidebarLinks = [
     imgURL: "/assets/apartment.svg",
     route: "/property",
     label: "Property",
+  },  
+  {
+    imgURL: "/assets/apartment.svg",
+    route: "/integrationhub",
+    label: "Integration Hub",
   },
+  
 ];
 
 export const profileTabs = [

@@ -37,19 +37,20 @@ async function Page({ params }: { params: { id: string } }) {
     } catch (error) {
       console.error("Error fetching signed URL", error);
       // Ici, vous pouvez laisser la propriété picture telle quelle ou la mettre à jour avec une valeur par défaut
-      propertyInfo.picture = 'Adresse de l\'image par défaut ou manquante';
+      propertyInfo.picture = '/assets/missingApt.webp';
     }
   } else {
     // Définition d'une image par défaut si aucune image n'est présente
-    propertyInfo.picture = 'Adresse de l\'image par défaut ou manquante';
+    propertyInfo.picture = '/assets/missingApt.webp';
   }
 
   return (
     <section>
       <PropertyHeader
         internal_name = {propertyInfo.internal_name ? propertyInfo.internal_name : 'Internal Name missing'}
-        address = {propertyInfo.adress ? propertyInfo.adress : 'Adress missing'}
-        picture = {propertyInfo.picture ? propertyInfo.picture : 'Adress missing'}
+        address = {propertyInfo.address ? propertyInfo.address : 'Adress missing'}
+        picture = {propertyInfo.picture ? propertyInfo.picture : '/assets/missingApt.webp'}
+        id = {propertyInfo.id}
       />
 
       <div className='mt-9'>

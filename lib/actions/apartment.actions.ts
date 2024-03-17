@@ -16,14 +16,62 @@ import mongoose from "mongoose";
 
 interface Params {
     userId: string;
+    property_id: string;
     internal_name: string;
     checkin_process: string;
     address: string;
     urgent_number: string;
+    path:string;
+  }
+
+  export async function updateProperty({
+    userId,
+    property_id,
+    internal_name,
+    checkin_process,
+    address,
+    urgent_number,
+    path,
+  }: Params): Promise<void> {
+    try {
+      await connectToDB();
+  
+      if (property_id) {
+        // Mise à jour d'un appartement existant
+        await Apartment.findOneAndUpdate(
+          { _id: property_id },
+          {
+            owner : userId,
+            internal_name : internal_name,
+            checkin_process : checkin_process,
+            address : address,
+            urgent_number : urgent_number,
+            updated_at: new Date(),
+          }
+        );
+      } else {
+        // Création d'un nouvel appartement
+        const newApartment = new Apartment({
+          owner : userId,
+          internal_name : internal_name,
+          checkin_process : checkin_process,
+          address : address,
+          urgent_number : urgent_number,
+        });
+        await newApartment.save();
+      }
+  
+      if (path === `/property/edit/${property_id}`) {
+        revalidatePath(path);
+      }
+    } catch (error: any) {
+      throw new Error(`Failed to create/update apartment: ${error.message}`);
+    }
   }
   
 export async function addApartement({
     userId,
+    property_id,
     internal_name,
     checkin_process,
     address,
@@ -58,11 +106,6 @@ export async function getApartment(userId: string) {
         connectToDB();
 
         const  userApartment = await Apartment.find({owner:userId}).populate({path: 'listings',model: Listing,select:'picture title'}).exec();
-        //const  userApartment = await Apartment.find({owner:userId}).populate({path: 'owner',model: User,select:'bio',}).exec();
-        userApartment.forEach(element => {
-          //console.log(element.listings)
-          
-        });
 
         return userApartment;
         } catch (error) {
@@ -137,6 +180,8 @@ export async function fetchProperties({
 export async function fetchProperty(apartmentId: string) {
       try {
         connectToDB();
+        console.log('apartmentId : \t',apartmentId)
+
         let apt = await Apartment.findOne({ _id: apartmentId })
         .populate({path: 'listings',model: Listing,select:'picture title'})
         .populate({path: 'owner',model: User,select:'internal_id'})
@@ -145,7 +190,7 @@ export async function fetchProperty(apartmentId: string) {
         return apt;
 
       } catch (error: any) {
-        throw new Error(`Failed to fetch user: ${error.message}`);
+        throw new Error(`Failed to fetch apartment: ${error.message}`);
       }
     }
     

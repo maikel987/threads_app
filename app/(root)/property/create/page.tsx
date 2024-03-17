@@ -18,6 +18,14 @@ async function Page() {
   const activity = await getApartment(userInfo._id);
   console.log("activity",activity);
 
+  let apt_info = {
+    id:'',
+    address: '',
+    checkin_process: '',
+    internal_name: '',
+    urgent_number: '',
+  }
+
   return (
     <>
     <div className='flex w-full flex-col justify-start'>
@@ -30,7 +38,7 @@ async function Page() {
     </div>
     <section className='mt-10 flex flex-col gap-5'>
     <section className='mt-9 bg-dark-2 p-10'>
-      <ApartmentForm userId={userInfo._id} btnTitle='Continue' />
+      <ApartmentForm userId={userInfo._id} btnTitle='Continue' apartment_info={apt_info} />
     </section>
     </section>
     </>
