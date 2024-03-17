@@ -58,3 +58,9 @@ export const propertyTabs = [
   { value: "listings", label: "Listings", icon: "/assets/search.svg" },
   { value: "property", label: "Property", icon: "/assets/members.svg" },
 ];
+
+export const platformLogo={
+  'airbnb': "/assets/airbnb.jpeg",
+  'booking': "/assets/booking.png",
+  'vrbo': '/assets/vrbo.png',
+}
