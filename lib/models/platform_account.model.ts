@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const platformAccountSchema = new Schema({
-  _id: Schema.Types.ObjectId,
   listings: [{
     type: Schema.Types.ObjectId,
     ref: 'Listing', // Remplacez 'Listing' par le nom exact du modèle référencé si différent
@@ -29,6 +28,10 @@ const platformAccountSchema = new Schema({
     type: String,
     required: true,
   },  
+  account_url: {
+    type: String,
+    required: false,
+  },
   created_at: {
     type: Date,
     default: Date.now,

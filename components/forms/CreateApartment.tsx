@@ -166,9 +166,16 @@ const ApartmentForm = ({  btnTitle, userId, apartment_info }: Props) => {
           )}
         />
 
-        <Button type='submit' className='bg-primary-500'>
-          {btnTitle}
-        </Button>
+
+    <div className='flex justify-end gap-2'>
+      <Button type='button' className='bg-secondary-500 w-full' onClick={() => router.back()}>
+        Cancel
+      </Button>
+      <Button type='submit' className='bg-primary-500 w-full'>
+        {btnTitle}
+      </Button>
+
+    </div>
       </form>
     </Form>
   );

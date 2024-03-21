@@ -1,37 +1,35 @@
 import Image from "next/image";
 import { currentUser } from "@clerk/nextjs";
+import { format } from 'date-fns';
 
-import { communityTabs } from "@/constants";
+import { integrationHubTabs, platformLogo } from "@/constants";
 
-import UserCard from "@/components/cards/UserCard";
-import ThreadsTab from "@/components/shared/ThreadsTab";
-import ProfileHeader from "@/components/shared/ProfileHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { fetchCommunityDetails } from "@/lib/actions/community.actions";
+import { fetchPlatformAccountDetails } from "@/lib/actions/integration.actions";
+import IntegrationHeader from "@/components/shared/IntegrationHeader";
 
 async function Page({ params }: { params: { id: string } }) {
   const user = await currentUser();
   if (!user) return null;
 
-  const communityDetails = await fetchCommunityDetails(params.id);
-
+  const platformAccountDetails = await fetchPlatformAccountDetails(params.id);
+  
   return (
     <section>
-      <ProfileHeader
-        accountId={communityDetails.createdBy.id}
-        authUserId={user.id}
-        name={communityDetails.name}
-        username={communityDetails.username}
-        imgUrl={communityDetails.image}
-        bio={communityDetails.bio}
-        type='Community'
+      <IntegrationHeader
+        integrationId={platformAccountDetails.id}
+        userId={user.id}
+        platform={platformAccountDetails.platform}
+        username={platformAccountDetails.username ? platformAccountDetails.username : platformAccountDetails.platform_account_id}
+        imgUrl={platformAccountDetails.platform in platformLogo ? platformLogo[platformAccountDetails.platform as keyof typeof platformLogo] : '/assets/missingConnection.webp'}
+        updatedDate={platformAccountDetails.updated_at ? `Last update : ${format(new Date(platformAccountDetails.updated_at), 'dd/MM/yyyy')}` : ''}
       />
 
       <div className='mt-9'>
         <Tabs defaultValue='threads' className='w-full'>
           <TabsList className='tab'>
-            {communityTabs.map((tab) => (
+            {integrationHubTabs.map((tab) => (
               <TabsTrigger key={tab.label} value={tab.value} className='tab'>
                 <Image
                   src={tab.icon}
@@ -42,9 +40,9 @@ async function Page({ params }: { params: { id: string } }) {
                 />
                 <p className='max-sm:hidden'>{tab.label}</p>
 
-                {tab.label === "Threads" && (
+                {tab.label === "Listings" && (
                   <p className='ml-1 rounded-sm bg-light-4 px-2 py-1 !text-tiny-medium text-light-2'>
-                    {communityDetails.threads.length}
+                    {platformAccountDetails.listings.length}
                   </p>
                 )}
               </TabsTrigger>
@@ -53,16 +51,16 @@ async function Page({ params }: { params: { id: string } }) {
 
           <TabsContent value='threads' className='w-full text-light-1'>
             {/* @ts-ignore */}
-            <ThreadsTab
+            {/*<ThreadsTab
               currentUserId={user.id}
-              accountId={communityDetails._id}
+              accountId={platformAccountDetails._id}
               accountType='Community'
-            />
+                />*/}
           </TabsContent>
 
           <TabsContent value='members' className='mt-9 w-full text-light-1'>
             <section className='mt-9 flex flex-col gap-10'>
-              {communityDetails.members.map((member: any) => (
+              {/*platformAccountDetails.members.map((member: any) => (
                 <UserCard
                   key={member.id}
                   id={member.id}
@@ -71,17 +69,8 @@ async function Page({ params }: { params: { id: string } }) {
                   imgUrl={member.image}
                   personType='User'
                 />
-              ))}
+              ))*/}
             </section>
-          </TabsContent>
-
-          <TabsContent value='requests' className='w-full text-light-1'>
-            {/* @ts-ignore */}
-            <ThreadsTab
-              currentUserId={user.id}
-              accountId={communityDetails._id}
-              accountType='Community'
-            />
           </TabsContent>
         </Tabs>
       </div>

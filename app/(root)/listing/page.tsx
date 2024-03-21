@@ -4,12 +4,14 @@ import { currentUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
 import { fetchUser, getActivity } from "@/lib/actions/user.actions";
-import { fetchProperties, getApartment } from "@/lib/actions/apartment.actions";
 import ApartmentForm from "@/components/forms/CreateApartment";
 import Searchbar from "@/components/shared/Searchbar";
 import PropertyCard from "@/components/cards/PropertyCard";
 import Pagination from "@/components/shared/Pagination";
 import { getSignedImageUrl } from '@/lib/aws';
+import { fetchListings } from "@/lib/actions/listing.actions";
+import ListingCard from "@/components/cards/ListingCard";
+import ListingCard2 from "@/components/cards/ListingCard2";
 
 
 async function Page({
@@ -23,33 +25,29 @@ async function Page({
   const userInfo = await fetchUser(user.id);
   if (!userInfo?.onboarded) redirect("/onboarding");
 
-  const apartment = await getApartment(userInfo._id);
-  //console.log("activity",apartment);
-
-  const result = await fetchProperties({
+  const result = await fetchListings({
     userId: userInfo._id,
     searchString: searchParams.q,
     pageNumber: searchParams?.page ? +searchParams.page : 1,
     pageSize: 25,
   });
 
-
-  const updateTasks = result.apartments.map(async (property) => {
-    if (property.listings?.length > 0 && property.listings[0]?.picture) {
+  const updateTasks = result.listings.map(async (listing) => {
+    if (listing.picture) {
       try {
         // Tente de récupérer l'URL signée pour l'image
-        const signedUrl = await getSignedImageUrl(property.listings[0].picture);
-        property.picture = signedUrl;
+        const signedUrl = await getSignedImageUrl(listing.picture);
+        listing.signedUrl = signedUrl;
       } catch (error) {
         console.error("Error fetching signed URL", error);
-        property.picture = '/assets/missingApt.webp'; // Utiliser une image par défaut en cas d'erreur
+        listing.signedUrl = '/assets/missingListingPict.webp'; // Utiliser une image par défaut en cas d'erreur
       }
     } else {
-      property.picture = '/assets/missingApt.webp'; // Image par défaut si aucune image n'est présente
+        listing.signedUrl = '/assets/missingListingPict.webp'; // Image par défaut si aucune image n'est présente
     }
-    return property; // Renvoie la propriété mise à jour
+    return listing; // Renvoie la propriété mise à jour
   });
-  const updatedProperties = await Promise.all(updateTasks);
+  const updatedListings = await Promise.all(updateTasks);
 
 
     
@@ -57,7 +55,7 @@ async function Page({
     <section>
       <div className='flex w-full flex-col justify-start'>
         <div className='flex items-center justify-between'>
-          <h1 className='head-text mb-10'>Properties</h1>
+          <h1 className='head-text mb-10'>Listings</h1>
           <Link href='/property/create'>
             <div className='flex cursor-pointer gap-3 rounded-lg bg-dark-3 px-4 py-2'>
               <Image
@@ -73,20 +71,23 @@ async function Page({
         </div>
       </div>
 
-      <Searchbar routeType='property' searchElement="Property"/>
+      <Searchbar routeType='listing' searchElement="Listing"/>
 
       <div className='mt-14 flex flex-col gap-9'>
-        {result.apartments.length === 0 ? (
+        {result.listings.length === 0 ? (
           <p className='no-result'>No Result</p>
         ) : (
           <>
-            {updatedProperties.map((property) => (
-              <PropertyCard
-              id={property.id}
-              key={property.id}
-              internal_name={property.internal_name ? property.internal_name : 'Internal Name missing'}
-              address={property.address != null ? property.address : 'Adress missing'}
-              picture={property.picture}
+            {updatedListings.map((listing) => (
+              <ListingCard2
+              key={listing.internal_id}
+              internal_id = {listing.internal_id}
+              link = {listing.link}
+              picture = {listing.signedUrl}
+              platform = {listing.platform}
+              status = {listing.status}
+              title = {listing.title}
+              updated_at = {listing.updated_at}
               />
             ))}
           </>

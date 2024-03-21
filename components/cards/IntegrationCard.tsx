@@ -12,7 +12,9 @@ interface Props {
   platform_account_id: string;
   updated_at: Date;
   listings: {
-    image: string;
+    picture:string;
+    title:string;
+    signedURL: string;
   }[];
 }
 function IntegrationCard({ id,platform,username,platform_account_id,updated_at,listings}: Props) {
@@ -30,13 +32,13 @@ function IntegrationCard({ id,platform,username,platform_account_id,updated_at,l
 
         <div>
           <Link href={`/integrationhub/${id}`}>
-            <h4 className='text-base-semibold text-light-1'>{platform}</h4>
+            <h4 className='text-base-semibold text-light-1'>  {platform? platform.charAt(0).toUpperCase() + platform.slice(1) : ''}</h4>
           </Link>
           <p className='text-small-medium text-gray-1'>@{username ? username : platform_account_id}</p>
         </div>
       </div>
 
-      <p className='mt-4 text-subtle-medium text-gray-1'>{updated_at ? format(new Date(updated_at), 'dd - MM - yyyy') : ''}</p>
+      <p className='mt-4 text-subtle-medium text-gray-1'>{updated_at ? format(new Date(updated_at), 'dd/MM/yyyy') : ''}</p>
 
       <div className='mt-5 flex flex-wrap items-center justify-between gap-3'>
         <Link href={`/integrationhub/${id}`}>
@@ -44,28 +46,26 @@ function IntegrationCard({ id,platform,username,platform_account_id,updated_at,l
             View
           </Button>
         </Link>
-
         {listings.length > 0 && (
           <div className='flex items-center'>
-            {listings.map((member, index) => (
+            {listings.slice(0, 5).map((member, index) => (
               <Image
                 key={index}
-                src={member.image}
+                src={member.signedURL}
                 alt={`listing_${index}`}
-                width={28}
-                height={28}
-                className={`${
-                  index !== 0 && "-ml-2"
-                } rounded-full object-cover`}
+                width={40}
+                height={40}
+                className={`${index !== 0 ? "-ml-2" : ""} rounded-full object-cover`}
               />
             ))}
-            {listings.length > 3 && (
+            {listings.length > 5 && (
               <p className='ml-1 text-subtle-medium text-gray-1'>
-                {listings.length}+ Listings
+                +{listings.length - 5} more
               </p>
             )}
           </div>
         )}
+
       </div>
     </article>
   );

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUser } from "@/lib/actions/user.actions";
 import PropertyHeader from "@/components/shared/PropertyHeader";
 import { fetchProperty } from "@/lib/actions/apartment.actions";
-import { getSignedUrl } from "@/lib/aws";
+import { getSignedImageUrl } from "@/lib/aws";
 
 async function Page({ params }: { params: { id: string } }) {
   const user = await currentUser();
@@ -28,21 +28,16 @@ async function Page({ params }: { params: { id: string } }) {
 
   if (propertyInfo.listings?.length > 0 && propertyInfo.listings[0]?.picture) {
     try {
-      const signedUrl = await getSignedUrl({
-        objectKey: propertyInfo.listings[0].picture,
-        expiresInSeconds: 60 * 5, // Exemple : 5 minutes
-      });
-      // Mise à jour directe de la propriété picture de l'objet
-      propertyInfo.picture = signedUrl;
+      const signedUrl = await getSignedImageUrl(propertyInfo.listings[0].picture);
+      propertyInfo.picture = signedUrl; // Mise à jour du listing avec l'URL signée
     } catch (error) {
-      console.error("Error fetching signed URL", error);
-      // Ici, vous pouvez laisser la propriété picture telle quelle ou la mettre à jour avec une valeur par défaut
-      propertyInfo.picture = '/assets/missingApt.webp';
+      console.error("Error fetching signed URL for listing", error);
+      propertyInfo.picture = '/assets/missingApt.webp'; // Utiliser une image par défaut en cas d'erreur
     }
-  } else {
-    // Définition d'une image par défaut si aucune image n'est présente
-    propertyInfo.picture = '/assets/missingApt.webp';
+    } else {
+      propertyInfo.picture = '/assets/missingApt.webp'; // Image par défaut si aucune image n'est présente
   }
+  
 
   return (
     <section>
@@ -67,9 +62,9 @@ async function Page({ params }: { params: { id: string } }) {
                 />
                 <p className='max-sm:hidden'>{tab.label}</p>
 
-                {tab.label === "Threads" && (
+                {tab.label === "Listings" && (
                   <p className='ml-1 rounded-sm bg-light-4 px-2 py-1 !text-tiny-medium text-light-2'>
-                    {'userInfo.threads.length'}
+                    {propertyInfo.listings.length}
                   </p>
                 )}
               </TabsTrigger>

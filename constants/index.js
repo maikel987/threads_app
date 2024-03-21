@@ -39,7 +39,11 @@ export const sidebarLinks = [
     route: "/integrationhub",
     label: "Integration Hub",
   },
-  
+  {
+    imgURL: "/assets/apartment.svg",
+    route: "/listing",
+    label: "Listing",
+  },
 ];
 
 export const profileTabs = [
@@ -59,8 +63,14 @@ export const propertyTabs = [
   { value: "property", label: "Property", icon: "/assets/members.svg" },
 ];
 
+export const integrationHubTabs = [
+  { value: "listings", label: "Listings", icon: "/assets/search.svg" },
+  { value: "property", label: "Property", icon: "/assets/members.svg" },
+];
+
 export const platformLogo={
   'airbnb': "/assets/airbnb.jpeg",
   'booking': "/assets/booking.png",
   'vrbo': '/assets/vrbo.png',
 }
+
