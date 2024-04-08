@@ -50,12 +50,21 @@
     @apply h-auto min-w-[74px] rounded-lg bg-primary-500 text-[12px] text-light-1 !important;
   }
 
-  .searchbar {
-    @apply flex gap-1 rounded-lg bg-dark-3 px-4 py-2;
+  .connection_btn {
+    @apply h-auto min-w-[74px] rounded-lg bg-orange-400 text-[12px] text-light-1 !important;
   }
 
+  .payout_config_btn {
+    @apply h-auto min-w-[74px] rounded-lg bg-green-500 text-[12px] text-light-1 !important;
+  }
+
+  .searchbar {
+    @apply flex gap-1 rounded-lg bg-dark-3 px-4 py-2 w-full;
+  }
+  
   .searchbar_input {
     @apply border-none bg-dark-3 text-base-regular text-light-4 outline-none !important;
+    @apply flex-1;
   }
 
   .topbar {
@@ -159,3 +168,15 @@
 .comment-form_btn {
   @apply rounded-3xl bg-primary-500 px-8 py-2 !text-small-regular text-light-1 max-xs:w-full !important;
 }
+
+.color-housing-not-connected { color: #f87171; } /* Rouge 500 */
+.color-connection-requested { color: #fbbf24; } /* Jaune 500 */
+.color-payout-setup-required { color: #ca8a04; } /* Jaune 600 */
+.color-awaiting-final-approval { color: #0ea5e9; } /* Sky 500 */
+.color-connected { color: #22c55e; } /* Vert 500 */
+
+.color-initiating { color: #f97316; } /* Orange 500 for initiating */
+.color-pending { color: #3b82f6; } /* Blue 500 for pending */
+.color-connected { color: #22c55e; } /* Green 500 for connected */
+.color-refreshing { color: #14b8a6; } /* Teal 500 for refreshing */
+.color-failed { color: #dc2626; } /* Red 700 for failed */

@@ -4,14 +4,24 @@ import { currentUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
 import { fetchUser, getActivity } from "@/lib/actions/user.actions";
-import ApartmentForm from "@/components/forms/CreateApartment";
 import Searchbar from "@/components/shared/Searchbar";
-import PropertyCard from "@/components/cards/PropertyCard";
 import Pagination from "@/components/shared/Pagination";
 import { getSignedImageUrl } from '@/lib/aws';
 import { fetchListings } from "@/lib/actions/listing.actions";
 import ListingCard from "@/components/cards/ListingCard";
 import ListingCard2 from "@/components/cards/ListingCard2";
+import ListingCard3 from "@/components/cards/ListingCard3";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { colorListingStatus } from "@/lib/models/listingstatus";
+import StatusSelector from "@/components/shared/SelectStatus";
+
 
 
 async function Page({
@@ -30,7 +40,9 @@ async function Page({
     searchString: searchParams.q,
     pageNumber: searchParams?.page ? +searchParams.page : 1,
     pageSize: 25,
+    status: searchParams?.status,
   });
+
 
   const updateTasks = result.listings.map(async (listing) => {
     if (listing.picture) {
@@ -71,7 +83,22 @@ async function Page({
         </div>
       </div>
 
-      <Searchbar routeType='listing' searchElement="Listing"/>
+      <div className="flex items-center space-x-4 w-full">
+        <div className="flex-shrink-0">
+        <StatusSelector 
+        routeType='listing' 
+        statuses={colorListingStatus} 
+        initial_status={searchParams?.status ? searchParams?.status : ''}
+        actual_query = {searchParams}/>
+          
+        </div>
+
+        <div className="flex-1">
+          <Searchbar routeType='listing' searchElement="Listing"/>
+        </div>
+        </div>
+
+
 
       <div className='mt-14 flex flex-col gap-9'>
         {result.listings.length === 0 ? (
@@ -79,7 +106,7 @@ async function Page({
         ) : (
           <>
             {updatedListings.map((listing) => (
-              <ListingCard2
+              <ListingCard3
               key={listing.internal_id}
               internal_id = {listing.internal_id}
               link = {listing.link}

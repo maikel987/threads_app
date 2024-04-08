@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 
 import { FilterQuery, SortOrder } from "mongoose";
 import mongoose from "mongoose";
+import { ListingStatus } from "../models/listingstatus";
 
 export async function fetchListings({
     userId,
@@ -20,12 +21,14 @@ export async function fetchListings({
     pageNumber = 1,
     pageSize = 20,
     sortBy = "desc",
+    status='',
   }: {
     userId: string;
     searchString?: string;
     pageNumber?: number;
     pageSize?: number;
     sortBy?: SortOrder;
+    status?:string
   }) {
     try {
       connectToDB();
@@ -53,6 +56,11 @@ export async function fetchListings({
           { title: { $regex: regex } },
         ];
       }
+      if (status && status!=='all') {
+        query.$and = [
+          { status: status },
+        ];
+      }
   
       // Define the sort options for the fetched users based on createdAt field and provided sort order.
       const sortOptions = { createdAt: sortBy };
@@ -72,7 +80,32 @@ export async function fetchListings({
 
       return { listings, isNext };
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching listings:", error);
       throw error;
     }
   }
+
+export async function listingStatusEvolution({internal_id}:{internal_id:string}){
+  try {
+    connectToDB();
+
+    const listing = await Listing.findOne({internal_id:internal_id}).exec();
+    if (!listing) {
+      console.error("Listing not found");
+      return; // Sortie anticipée si l'objet n'est pas trouvé
+    }
+
+    if(listing.status === ListingStatus.HOUSING_NOT_CONNECTED){
+      listing.status = ListingStatus.CONNECTION_REQUESTED;
+    }else if (listing.status === ListingStatus.PAYOUT_SETUP_REQUIRED){
+      listing.status = ListingStatus.AWAITING_FINAL_APPROVAL;
+    }
+
+    await listing.save();
+
+
+  } catch (error) {
+      console.error("Error updating listing status:\t", error);
+  throw error;
+  }
+}

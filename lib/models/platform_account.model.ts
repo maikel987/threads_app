@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { IntegrationStatus } from './integrationStatus';
 const { Schema } = mongoose;
 
 const platformAccountSchema = new Schema({
@@ -19,6 +20,11 @@ const platformAccountSchema = new Schema({
   password: {
     type: String,
     required: false,
+  },
+  status: {
+    type: String,
+    required: true,
+    enum: IntegrationStatus,
   },
   platform: {
     type: String,

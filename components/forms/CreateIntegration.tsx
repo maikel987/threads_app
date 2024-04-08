@@ -97,8 +97,6 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
     }
   };
 
-
-
   return (
     <Form {...form}>
       <form
@@ -116,7 +114,7 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
       </FormLabel>
       <FormControl>
         <Select 
-          onValueChange={field.onChange} 
+          onValueChange={handlePlatformChange} 
           defaultValue={field.value} 
           disabled={!(integration_info.modifiable || !integration_info.platform)}
         >
@@ -126,7 +124,7 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
                 ? 'text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-100 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800' 
                 : 'cursor-not-allowed bg-gray-700 text-gray-300 border-gray-600'
             }>
-              <SelectValue placeholder="Select a platform" />
+              <SelectValue placeholder="Select a Platform" />
             </SelectTrigger>
           </FormControl>
           <SelectContent className="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">

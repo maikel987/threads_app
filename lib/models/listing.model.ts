@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ListingStatus } from "./listingstatus";
 
 const listingSchema = new mongoose.Schema({
     _id: mongoose.Schema.Types.ObjectId,
@@ -16,7 +17,8 @@ const listingSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      required: false,
+      required: true,
+      enum: ListingStatus,
     },
     apartment: {
       type: mongoose.Schema.Types.ObjectId,

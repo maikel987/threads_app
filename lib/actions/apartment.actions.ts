@@ -183,7 +183,7 @@ export async function fetchProperty(apartmentId: string) {
         console.log('apartmentId : \t',apartmentId)
 
         let apt = await Apartment.findOne({ _id: apartmentId })
-        .populate({path: 'listings',model: Listing,select:'picture title'})
+        .populate({path: 'listings',model: Listing})
         .populate({path: 'owner',model: User,select:'internal_id'})
         .exec();
         

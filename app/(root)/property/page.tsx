@@ -10,6 +10,7 @@ import Searchbar from "@/components/shared/Searchbar";
 import PropertyCard from "@/components/cards/PropertyCard";
 import Pagination from "@/components/shared/Pagination";
 import { getSignedImageUrl } from '@/lib/aws';
+import PropertyCard2 from "@/components/cards/PropertyCard2";
 
 
 async function Page({
@@ -81,7 +82,7 @@ async function Page({
         ) : (
           <>
             {updatedProperties.map((property) => (
-              <PropertyCard
+              <PropertyCard2 
               id={property.id}
               key={property.id}
               internal_name={property.internal_name ? property.internal_name : 'Internal Name missing'}

@@ -34,7 +34,8 @@ export default function RootLayout({
               <div className='w-full max-w-4xl'>{children}</div>
             </section>
             {/* @ts-ignore */}
-            <RightSidebar />
+            {/* <RightSidebar /> */}
+            
           </main>
 
           <Bottombar />

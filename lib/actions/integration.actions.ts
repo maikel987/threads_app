@@ -9,6 +9,7 @@ import User from "../models/user.model";
 import { connectToDB } from "../mongoose";
 import Listing from "../models/listing.model";
 import { revalidatePath } from "next/cache";
+import { IntegrationStatus } from "../models/integrationStatus";
 
 async function createPlatformAccount(userId:string) {
     try {
@@ -115,6 +116,26 @@ interface Params {
     path:string;
   }
 
+  export async function refreshIntegration({
+    integrationId
+  }: {integrationId: string}): Promise<void> {
+    try {
+      await connectToDB();
+  
+        // Mise à jour d'un appartement existant
+        await PlatformAccount.findOneAndUpdate(
+          { _id: integrationId },
+          {
+            status:IntegrationStatus.REFRESHING,
+            updated_at: new Date(),
+          }
+        );
+      revalidatePath(`/integrationhub/${integrationId}`);
+    } catch (error: any) {
+      throw new Error(`Failed to create/update integration: ${error.message}`);
+    }
+  }
+
   export async function updateIntegration({
     integrationId,
     userId,
@@ -139,6 +160,7 @@ interface Params {
             platform:platform,
             platform_account_id:platform_account_id,
             account_url:account_url,
+            status:IntegrationStatus.REFRESHING,
             updated_at: new Date(),
           }
         );
@@ -150,6 +172,7 @@ interface Params {
             password:password,
             platform:platform,
             platform_account_id:platform_account_id,
+            status:IntegrationStatus.INITIATING,
             account_url:account_url,
         });
         await newIntegration.save();

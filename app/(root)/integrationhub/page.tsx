@@ -18,6 +18,7 @@ async function Page({
 }: {
   searchParams: { [key: string]: string | undefined };
 }) {
+
   const user = await currentUser();
   if (!user) return null;
 
@@ -30,7 +31,6 @@ async function Page({
     pageNumber: searchParams?.page ? +searchParams.page : 1,
     pageSize: 25,
   });
-  console.log('platformAccount result', result.platformAccount[0].listings);
 
   interface Listing {
     _id: string;
@@ -111,6 +111,7 @@ async function Page({
                 platform_account_id= {integration.platform_account_id}
                 updated_at= {integration.updated_at}
                 listings= {integration.listings}
+                status={integration.status}
               />
             ))}
           </>
