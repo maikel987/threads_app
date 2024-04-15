@@ -201,3 +201,40 @@ interface Params {
     }
   }
   
+  export async function fetchPlatformAccountByPlatform({
+    userId,
+    platform,
+    sortBy = "asc",
+  }: {
+    userId: string;
+    platform?: string;
+    sortBy?: SortOrder;
+  }) {
+    try {
+      connectToDB();
+      // Créez un objet de requête initial pour filtrer les PlatformAccount.
+      // Incluez le filtre platform uniquement si platform n'est pas une chaîne vide.
+      const query: FilterQuery<typeof PlatformAccount> = { owner__id: userId };
+      if (platform) {
+        query.platform = platform;
+      }
+      // Define the sort options for the fetched platformAccount based on createdAt field and provided sort order.
+      const sortOptions = { updated_at: sortBy };
+  
+      // Create a query to fetch the platformAccount based on the search and sort criteria.
+      const platformAccountQuery = PlatformAccount.find(query)
+        .select('username listings platform_account_id platform _id') 
+        .sort(sortOptions)
+
+      // Count the total number of platformAccount that match the search criteria (without pagination).
+  
+      const platformAccount = await platformAccountQuery.exec();
+  
+      // Check if there are more platformAccount beyond the current page.
+  
+      return platformAccount;
+    } catch (error) {
+      console.error("Error fetching platformAccount:", error);
+      throw error;
+    }
+  }

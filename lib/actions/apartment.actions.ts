@@ -193,4 +193,36 @@ export async function fetchProperty(apartmentId: string) {
         throw new Error(`Failed to fetch apartment: ${error.message}`);
       }
     }
+    export async function fetchPropertyByUser({
+      userId,
+      sortBy = "asc",
+    }: {
+      userId: string;
+      sortBy?: SortOrder;
+    }) {
+      try {
+        connectToDB();
+        // Créez un objet de requête initial pour filtrer les PlatformAccount.
+        // Incluez le filtre platform uniquement si platform n'est pas une chaîne vide.
+        const query: FilterQuery<typeof Apartment> = { owner__id: userId };
+
+        // Define the sort options for the fetched apartment based on createdAt field and provided sort order.
+        const sortOptions = { internal_name: sortBy };
     
+        // Create a query to fetch the apartment based on the search and sort criteria.
+        const apartmentQuery = Apartment.find(query)
+          .select('_id internal_name address listings') 
+          .sort(sortOptions)
+  
+        // Count the total number of apartment that match the search criteria (without pagination).
+    
+        const apartment = await apartmentQuery.exec();
+    
+        // Check if there are more apartment beyond the current page.
+    
+        return apartment;
+      } catch (error) {
+        console.error("Error fetching apartment:", error);
+        throw error;
+      }
+    }  

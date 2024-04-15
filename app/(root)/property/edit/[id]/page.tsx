@@ -31,12 +31,12 @@ async function Page({ params }: { params: { id: string } }) {
         <>
         <div className='flex w-full flex-col justify-start'>
             <div className='flex items-center justify-between'>
-                <h1 className='head-text'>Edit Listings</h1>
+                <h1 className='head-text'>Edit Property</h1>
             </div>
         </div>
         <section className='mt-10 flex flex-col gap-5'>
             <section className='mt-9 bg-dark-2 p-10'>
-                <ApartmentForm userId={userInfo._id} btnTitle='Continue' apartment_info={apt_info} />
+                <ApartmentForm userId={userInfo._id.toString()} btnTitle='Continue' apartment_info={apt_info} />
             </section>
         </section>
         </>

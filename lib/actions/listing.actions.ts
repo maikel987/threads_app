@@ -14,6 +14,7 @@ import { revalidatePath } from "next/cache";
 import { FilterQuery, SortOrder } from "mongoose";
 import mongoose from "mongoose";
 import { ListingStatus } from "../models/listingstatus";
+import PlatformAccount from "../models/platform_account.model";
 
 export async function fetchListings({
     userId,
@@ -107,5 +108,74 @@ export async function listingStatusEvolution({internal_id}:{internal_id:string})
   } catch (error) {
       console.error("Error updating listing status:\t", error);
   throw error;
+  }
+}
+
+export async function fetchListing(listingId: string) {
+  try {
+    connectToDB();
+    console.log('apartmentId : \t',listingId)
+
+    let apt = await Listing.findOne({ _id: listingId })
+    .populate({path: 'listing_features',model: ListingFeatures})
+    .populate({path: 'apartment',model: Apartment})
+    .populate({path: 'platform_account',model: PlatformAccount})
+    .exec();
+    
+    return apt;
+
+  } catch (error: any) {
+    throw new Error(`Failed to fetch apartment: ${error.message}`);
+  }
+}
+interface Params {
+  link: string;
+  platform: string;
+  title: string;
+  apartment: string;
+  picture: string;
+  platform_account: string;
+  path: string;
+  internal_id: string;
+  userId:string;
+  status:string;
+}
+
+export async function updateListing({
+  link,
+  userId,
+  status,
+  platform,
+  title,
+  apartment,
+  picture,
+  platform_account,
+  path,
+  internal_id,
+}: Params): Promise<void> {
+  try {
+    console.log('coucou from db')
+    connectToDB();
+
+    await Listing.findOneAndUpdate(
+      { internal_id: internal_id },
+      {
+        link:link,
+        platform:platform,
+        title:title,
+        picture:picture,
+        apartment:apartment,
+        platform_account:platform_account,
+        listing_feature: null,
+        status: status?status:ListingStatus.HOUSING_NOT_CONNECTED,
+      },
+      { upsert: true ,new: true}
+    );
+
+    if (path === "/listing/edit") {
+      revalidatePath(path);
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to create/update listing: ${error.message}`);
   }
 }

@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { ListingStatus } from "./listingstatus";
 
 const listingSchema = new mongoose.Schema({
-    _id: mongoose.Schema.Types.ObjectId,
     internal_id: {
       type: String,
       required: false,
@@ -20,15 +19,20 @@ const listingSchema = new mongoose.Schema({
       required: true,
       enum: ListingStatus,
     },
+    listing_features: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ListingFeatures",
+      required: false,
+    },
     apartment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Apartment",
       required: false,
-  },
-  conversation_ID_archives: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "ConversationIdArchive",
-  }],
+    },
+    conversation_ID_archives: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ConversationIdArchive",
+    }],
     picture: {
       type: String,
       required: false,

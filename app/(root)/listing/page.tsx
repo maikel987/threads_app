@@ -68,11 +68,11 @@ async function Page({
       <div className='flex w-full flex-col justify-start'>
         <div className='flex items-center justify-between'>
           <h1 className='head-text mb-10'>Listings</h1>
-          <Link href='/property/create'>
+          <Link href='/listing/create'>
             <div className='flex cursor-pointer gap-3 rounded-lg bg-dark-3 px-4 py-2'>
               <Image
                 src='/assets/edit.svg'
-                alt='add_property'
+                alt='add_listing'
                 width={16}
                 height={16}
               />
@@ -107,6 +107,7 @@ async function Page({
           <>
             {updatedListings.map((listing) => (
               <ListingCard3
+              dbId={listing.id}
               key={listing.internal_id}
               internal_id = {listing.internal_id}
               link = {listing.link}

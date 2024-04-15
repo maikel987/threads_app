@@ -13,6 +13,7 @@ import { PayoutConfigurationDialog } from '../dialog/PayoutConfigurationDialog';
 
 
 interface ListingProps {
+  dbId:string;
   internal_id: string;
   link: string;
   picture: string;
@@ -22,7 +23,7 @@ interface ListingProps {
   updated_at: Date;
 }
 
-function ListingCard3({ internal_id, title, status, picture,platform,updated_at }: ListingProps) {
+function ListingCard3({ dbId, internal_id, title, status, picture,platform,updated_at }: ListingProps) {
 
   const router = useRouter();
   
@@ -75,7 +76,7 @@ function ListingCard3({ internal_id, title, status, picture,platform,updated_at 
       <Button
         className='user-card_btn'
         onClick={() => {
-            router.push(`/property/${internal_id}`);
+            router.push(`/listing/${dbId}`);
         }}
         >
         View

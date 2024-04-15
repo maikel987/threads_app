@@ -137,6 +137,7 @@ async function Page({ params }: { params: { id: string } }) {
                 <>
               {propertyInfo.listings.map((listing:ListingInfo)=>(
                 <ListingCard3
+                dbId={listing._id}
                 key={listing.internal_id}
                 internal_id = {listing.internal_id}
                 link = {listing.link}

@@ -45,5 +45,7 @@ const listingFeaturesSchema = new mongoose.Schema({
   },
 });
 
-const ListingFeatures = mongoose.models.listingFeatures || mongoose.model("listing_features", listingFeaturesSchema);
+//const ListingFeatures = mongoose.models.listingFeatures || mongoose.model("listing_features", listingFeaturesSchema);
+const ListingFeatures = mongoose.models.ListingFeatures || mongoose.model("ListingFeatures", listingFeaturesSchema);
+
 export default ListingFeatures;
