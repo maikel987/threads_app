@@ -200,7 +200,15 @@ interface Params {
       throw new Error(`Failed to fetch integration: ${error.message}`);
     }
   }
-  
+  export interface PlatformAccount{
+    listingsCount:number; 
+    username:string; 
+    platform_account_id:string; 
+    platform:string; 
+    _id:string; 
+
+  };
+
   export async function fetchPlatformAccountByPlatform({
     userId,
     platform,
@@ -209,30 +217,33 @@ interface Params {
     userId: string;
     platform?: string;
     sortBy?: SortOrder;
-  }) {
+  }):Promise<PlatformAccount[]> {
     try {
       connectToDB();
-      // Créez un objet de requête initial pour filtrer les PlatformAccount.
-      // Incluez le filtre platform uniquement si platform n'est pas une chaîne vide.
+      
       const query: FilterQuery<typeof PlatformAccount> = { owner__id: userId };
       if (platform) {
         query.platform = platform;
       }
-      // Define the sort options for the fetched platformAccount based on createdAt field and provided sort order.
+
       const sortOptions = { updated_at: sortBy };
   
-      // Create a query to fetch the platformAccount based on the search and sort criteria.
       const platformAccountQuery = PlatformAccount.find(query)
         .select('username listings platform_account_id platform _id') 
         .sort(sortOptions)
 
-      // Count the total number of platformAccount that match the search criteria (without pagination).
   
       const platformAccount = await platformAccountQuery.exec();
   
-      // Check if there are more platformAccount beyond the current page.
+      const returnplatformAccount = platformAccount.map(pa => ({
+        username: pa.username,
+        listingsCount: pa.listings.length,
+        platform_account_id: pa.platform_account_id,
+        platform: pa.platform,
+        _id: pa._id.toString()
+      }));
   
-      return platformAccount;
+      return returnplatformAccount;
     } catch (error) {
       console.error("Error fetching platformAccount:", error);
       throw error;

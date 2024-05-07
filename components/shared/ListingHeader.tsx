@@ -72,27 +72,21 @@ function ListingHeader({
             <h2 className='text-left text-heading3-bold text-light-1'>
               {title}
             </h2>
-            <p className={`text-base-medium ${colorClass} pt-2`}>{formattedStatus}</p>
             <p className='text-base-medium text-gray-1 pt-4'>{`Last update : ${format(new Date(updated_at), 'dd/MM/yyyy')}`}</p>
           </div>
 
         </div>
-              {link && <Button
-              className='user-card_btn'
-              type="button" 
-              variant="secondary"
-              onClick={() => {
-                const url = link;
-                window.open(url, "_blank");
-                }}>
-              Listing
-            </Button>}
-            <div className='flex cursor-pointer gap-3 rounded-lg bg-dark-3 px-4 py-2'>
-              {status===ListingStatus.HOUSING_NOT_CONNECTED
-                && <ConnectionDialogue internal_id={internal_id}/>}
-              {status===ListingStatus.PAYOUT_SETUP_REQUIRED
-                && <PayoutConfigurationDialog internal_id={internal_id}/>}
+        <Link href={`/listing/edit/${id}`}>
+            <div className='flex cursor-pointer gap-3 rounded-lg bg-dark-3 pl-4 pr-8 py-2'>
+              <Image
+                src='/assets/edit.svg'
+                alt='logout'
+                width={16}
+                height={16}
+              />
+              <p className='text-light-2 max-sm:hidden'>Edit</p>
             </div>
+          </Link>
 
      
       </div>

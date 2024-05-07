@@ -1,5 +1,5 @@
 "use client";
-
+import axios from "axios";
 import * as z from "zod";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
@@ -25,19 +25,14 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 
-import { useUploadThing } from "@/lib/uploadthing";
-import { isBase64Image } from "@/lib/utils";
 
 import { ListingValidation } from "@/lib/validations/listing";
 import { updateListing } from "@/lib/actions/listing.actions";
 import { platformLogo } from "@/constants";
 import { fetchPlatformAccountByPlatform } from "@/lib/actions/integration.actions";
 import { fetchPropertyByUser } from "@/lib/actions/apartment.actions";
-interface Props {
 
-}
 
 interface Props {
   listing: {
@@ -72,12 +67,14 @@ interface Property{
 
 
 const CreateListing = ({ listing, btnTitle, modifiable,userId }: Props) => {
+  console.log("COUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOUCOU")
+
   const router = useRouter();
   const pathname = usePathname();
-  const { startUpload } = useUploadThing("media");
 
   const [files, setFiles] = useState<File[]>([]);
-    
+  
+  
 
   // Ajout d'un état pour suivre la plateforme sélectionnée
   const [selectedPlatform, setSelectedPlatform] = useState(listing.platform);
@@ -120,48 +117,51 @@ const CreateListing = ({ listing, btnTitle, modifiable,userId }: Props) => {
       setIntegrationOptions(updatedIntegrations);
   }
     loadIntegrations();
-  }, [selectedPlatform, userId]);
-  
+  }, [selectedPlatform]
+  );
 
 
-// Cela devrait être dans votre second useEffect où vous gérez la déduction de la plateforme
-useEffect(() => {
-  if (selectedIntegration && !selectedPlatform) {
-    // Utilisez ici `integrationOptions` qui est votre état contenant les intégrations chargées
-    const inferredPlatform = derivePlatformFromIntegration(selectedIntegration, integrationOptions);
-    handlePlatformChange(inferredPlatform);
-  }
-}, [selectedIntegration, selectedPlatform, integrationOptions]); // Ajoutez integrationOptions aux dépendances
 
-//fetchPropertyByUser
-useEffect(() => {
-  async function loadProperties() {
-    const properties = await fetchPropertyByUser({ userId });
+  // Cela devrait être dans votre second useEffect où vous gérez la déduction de la plateforme
+  useEffect(() => {
+    if (selectedIntegration && !selectedPlatform) {
+      // Utilisez ici `integrationOptions` qui est votre état contenant les intégrations chargées
+      const inferredPlatform = derivePlatformFromIntegration(selectedIntegration, integrationOptions);
+      handlePlatformChange(inferredPlatform);
+    }
+  }, [selectedIntegration, selectedPlatform, integrationOptions]
+  ); // Ajoutez integrationOptions aux dépendances
+
+  //fetchPropertyByUser
+  useEffect(() => {
+    async function loadProperties() {
+      const properties = await fetchPropertyByUser({ userId });
+      
+      // Update each property object as needed
+      const updatedProperties = properties.map(property => ({
+        ...property,
+        //listings: property.listings.length, // Assuming 'listings' is an array
+        _id: property._id.toString() // Convert ObjectId to string
+      }));
+      console.log(updatedProperties); // ##########################################
+      setPropertyOptions(updatedProperties); // Set the updated properties to state
+    }
+    loadProperties();
+  }, []
+  );
+
+
+
+
+  // Votre fonction pour dériver la plateforme à partir de l'ID de l'intégration
+  const derivePlatformFromIntegration = (integrationId: string, integrations: Integration[]): string => {
+    console.log('derivePlatformFromIntegration',integrationId, integrations)
+    const integration = integrations.find(integ => integ._id === integrationId);
+    console.log(integration?.platform)
+    return integration ? integration.platform : 'unknown'; // Retourne 'unknown' si non trouvé
+  };
+
     
-    // Update each property object as needed
-    const updatedProperties = properties.map(property => ({
-      ...property,
-      listings: property.listings.length, // Assuming 'listings' is an array
-      _id: property._id.toString() // Convert ObjectId to string
-    }));
-    console.log(updatedProperties); // ##########################################
-    setPropertyOptions(updatedProperties); // Set the updated properties to state
-  }
-  loadProperties();
-}, [userId]);
-
-
-
-
-// Votre fonction pour dériver la plateforme à partir de l'ID de l'intégration
-const derivePlatformFromIntegration = (integrationId: string, integrations: Integration[]): string => {
-  console.log('derivePlatformFromIntegration',integrationId, integrations)
-  const integration = integrations.find(integ => integ._id === integrationId);
-  console.log(integration?.platform)
-  return integration ? integration.platform : 'unknown'; // Retourne 'unknown' si non trouvé
-};
-
-  
 
 
   const form = useForm<z.infer<typeof ListingValidation>>({
@@ -178,37 +178,30 @@ const derivePlatformFromIntegration = (integrationId: string, integrations: Inte
 
   const onSubmit = async (values: z.infer<typeof ListingValidation>) => {
     console.log('Attempting to submit form', values);
-      try{  
-      console.log('submited')
-      /*
-      if(values.listing_photo){
+    try {
+      let pictureUrl = values.listing_photo;
 
-        const blob = values.listing_photo;
-        
-        const hasImageChanged = isBase64Image(blob);
-        if (hasImageChanged) {
-          const imgRes = await startUpload(files);
-          
-          if (imgRes && imgRes[0].url) {
-            values.listing_photo = imgRes[0].url;
-          }
-        }
+      // Si un nouveau fichier a été sélectionné pour le téléchargement
+      console.log("test",values.listing_photo,files.length)
+      if (values.listing_photo && files.length > 0) {
+        const formData = new FormData();
+        // Utilisez le premier fichier du tableau `files` si `listing_photo` est un objet de base64 ou un chemin local.
+        formData.append('file', files[0], files[0].name);
+  
+        const response = await axios.post('/api/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        // Supposons que la clé du fichier est retournée dans `response.data.fileKey`
+        pictureUrl = response.data.fileKey;
+        console.log(response);
+        console.log(`File uploaded successfully! File key: ${pictureUrl}`);
       }
-      */
-      // Extraction de l'ID à partir de l'URL
+
       const internalId = listing.internal_id || extractInternalId(values.link);
-      
-      console.log({
-        userId:userId ,
-        link: values.link,
-        platform: values.platform,
-        title: values.title,
-        apartment: values.apartment,
-        picture: values.listing_photo ? values.listing_photo : '',
-        platform_account: values.platform_account,
-        path: pathname,
-        internal_id: internalId,
-      })
+
 
       await updateListing({
         userId:userId ,
@@ -216,7 +209,7 @@ const derivePlatformFromIntegration = (integrationId: string, integrations: Inte
         platform: values.platform,
         title: values.title,
         apartment: values.apartment,
-        picture: values.listing_photo ? values.listing_photo : '',
+        picture: pictureUrl ? pictureUrl : '', // Utilisez l'URL de l'image retournée par le téléchargement
         platform_account: values.platform_account,
         path: pathname,
         internal_id: internalId,
@@ -349,43 +342,6 @@ const derivePlatformFromIntegration = (integrationId: string, integrations: Inte
             </FormItem>
           )}
         />
-{/* 
-<FormField
-  control={form.control}
-  name='platform'
-  render={({ field }) => (
-    <FormItem className='flex w-full flex-col gap-3'>
-      <FormLabel className='text-base-semibold text-light-2'>
-        Platform
-      </FormLabel>
-      <FormControl>
-        <Select 
-          onValueChange={handlePlatformChange} 
-          value = {selectedPlatform}
-          disabled={!(modifiable || !listing.platform)}
-        >
-          <FormControl>
-            <SelectTrigger className={
-              (modifiable || !listing.platform)
-                ? 'w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-100 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800' 
-                : 'w-full cursor-not-allowed bg-gray-700 text-gray-300 border-gray-600'
-            }>
-              <SelectValue placeholder="Select a Platform" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent className="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-full dark:bg-gray-700">
-            {Object.keys(platformLogo).map((platformKey) => (
-                <SelectItem key={platformKey} value={platformKey} className="text-sm text-gray-700 dark:text-gray-200 px-10 py-2 hover:bg-gray-100 dark:hover:text-white">
-                  {platformKey.charAt(0).toUpperCase() + platformKey.slice(1)} 
-                </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>*/}
 
 <FormField
   control={form.control}

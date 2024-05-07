@@ -1,7 +1,7 @@
 "use server";
 
 import AWS from 'aws-sdk';
-import Listing from './models/listing.model';
+
 
 // Configurer AWS avec les identifiants et la région depuis les variables d'environnement
 const aws_config = {
@@ -21,7 +21,7 @@ type SignedUrlOptions = {
   expiresInSeconds: number;
 };
 // Fonction pour générer une URL signée pour une seule image
-export async function getSignedImageUrl(objectKey: string): Promise<string> {
+export async function getSignedImageUrl2(objectKey: string): Promise<string> {
   const options: SignedUrlOptions = {
     objectKey: objectKey,
     expiresInSeconds: 60 * 5, // Exemple : 5 minutes
@@ -43,3 +43,16 @@ export async function getSignedImageUrl(objectKey: string): Promise<string> {
     });
   });
 }
+export async function getSignedImageUrl(objectKey: string): Promise<string> {
+  const bucketName = process.env.IMAGE_BUCKET_NAME;
+  const region = process.env.AWS_REGION; // Adaptez selon votre configuration AWS S3
+
+  // Construit l'URL en fonction du bucket, de la région, du clé de l'objet et de l'extension
+  const url = `https://${bucketName}.s3.${region}.amazonaws.com/${objectKey}`;
+
+  // Retourne l'URL construite
+  return url;
+}
+
+//https://msklbucket.s3.eu-west-3.amazonaws.com/044ed4_742530313597511760.jpeg
+

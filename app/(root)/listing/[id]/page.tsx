@@ -1,21 +1,22 @@
+
 import Image from "next/image";
 import { currentUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
-import { profileTabs, propertyTabs } from "@/constants";
-
-import ThreadsTab from "@/components/shared/ThreadsTab";
-import ProfileHeader from "@/components/shared/ProfileHeader";
+import { listingTabs } from "@/constants";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import { fetchUser } from "@/lib/actions/user.actions";
 
-
 import { getSignedImageUrl } from "@/lib/aws";
-import ListingCard3 from "@/components/cards/ListingCard3";
 import { fetchListing } from "@/lib/actions/listing.actions";
 import ListingHeader from "@/components/shared/ListingHeader";
 import { fetchListingFeature } from "@/lib/actions/listing_features.actions";
+import { ListingStatus, colorListingStatus } from "@/lib/models/listingstatus";
+import ListingConnectionCard from "@/components/cards/ListingConnectionCard";
+import IntegrationCard from "@/components/cards/IntegrationCard";
+import PropertyCardSmall from "@/components/cards/PropertyCardSmall";
+import IntegrationCardSmall from "@/components/cards/IntegrationCardSmall";
+import ListingFeatureCard from "@/components/cards/ListingFeatureCard";
 
 async function Page({ params }: { params: { id: string } }) {
   const user = await currentUser();
@@ -53,7 +54,7 @@ async function Page({ params }: { params: { id: string } }) {
   interface PlatformAccountInfo {
     _id: ObjectId;
     created_at: Date;
-    listings: ObjectId[];
+    listings: ListingInfo[];
     owner: ObjectId;
     password: string;
     platform: string;
@@ -105,6 +106,13 @@ async function Page({ params }: { params: { id: string } }) {
     listingInfo.signedUrl = '/assets/missingListingPict.webp'; // Image par défaut si aucune image n'est présente
   }
 
+  const colorClass = colorListingStatus[listingInfo.status as ListingStatus];
+  const formattedStatus = (listingInfo.status as string)
+  .split('_')
+  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+  .join(' ');
+
+
 
   return (
     <section>
@@ -119,11 +127,11 @@ async function Page({ params }: { params: { id: string } }) {
         conversation_number={listingInfo.conversation_ID_archives.length}
         updated_at={listingInfo.updated_at}
       />
-{/*
+
       <div className='mt-9'>
-        <Tabs defaultValue='listings' className='w-full'>
+        <Tabs defaultValue='connectivity' className='w-full'>
           <TabsList className='tab'>
-            {propertyTabs.map((tab) => (
+            {listingTabs.map((tab) => (
               <TabsTrigger key={tab.label} value={tab.value} className='tab'>
                 <Image
                   src={tab.icon}
@@ -133,50 +141,70 @@ async function Page({ params }: { params: { id: string } }) {
                   className='object-contain'
                 />
                 <p className='max-sm:hidden'>{tab.label}</p>
-
-                {tab.label === "Listings" && (
-                  <p className='ml-1 rounded-sm bg-light-4 px-2 py-1 !text-tiny-medium text-light-2'>
-                    {propertyInfo.listings.length}
-                  </p>
-                )}
               </TabsTrigger>
             ))}
           </TabsList>
+          <TabsContent
+              key='details'
+              value='details'
+              className='w-full text-light-1'
+            >
+                <div>
+                  <ListingFeatureCard listing_feature= {listing_feature}/>
+                </div>
+  
+            </TabsContent>
             <TabsContent
-              key='listings'
-              value='listings'
+              key='connectivity'
+              value='connectivity'
               className='w-full text-light-1'
             >
               <section className='mt-9 flex flex-col gap-10'>
                 <>
-              {propertyInfo.listings.map((listing:ListingInfo)=>(
-                <ListingCard3
-                dbId={listing._id}
-                key={listing.internal_id}
-                internal_id = {listing.internal_id}
-                link = {listing.link}
-                picture = {listing.signedUrl}
-                platform = {listing.platform}
-                status = {listing.status}
-                title = {listing.title}
-                updated_at = {listing.updated_at}
+                <ListingConnectionCard
+                  colorClass={colorClass}
+                  status={listingInfo.status}
+                  link={listingInfo.link}
+                  formattedStatus={formattedStatus}
+                  platform={listingInfo.platform}
+                  internal_id={listingInfo.internal_id}
                 />
-                ))}
                 </>
+                <div className="flex items-center justify-center gap-10">
+                  <h2 className='text-left text-heading3-bold text-light-1'> Property</h2>
+                  <>
+                    <PropertyCardSmall 
+                    id={listingInfo.apartment.id}
+                    key={listingInfo.apartment.id}
+                    internal_name={listingInfo.apartment.internal_name ? listingInfo.apartment.internal_name : 'Internal Name missing'}
+                    address={listingInfo.apartment.address != null ? listingInfo.apartment.address : 'Adress missing'}
+                    />
+                  </>
+                </div>
+
+              <div className="flex items-center justify-center gap-10">
+                <h2 className='text-left text-heading3-bold text-light-1'> Integration</h2>
+                <>
+                <IntegrationCardSmall
+                  key={listingInfo.platform_account.id}
+                  id={listingInfo.platform_account.id}
+                  platform={listingInfo.platform_account.platform}
+                  username= {listingInfo.platform_account.username}
+                  platform_account_id= {listingInfo.platform_account.platform_account_id}
+                  updated_at= {listingInfo.platform_account.updated_at}
+                  listings= {listingInfo.platform_account.listings}
+                  status={listingInfo.platform_account.status}
+                />
+                </>
+              </div>
               </section>
+
             </TabsContent>
-            <TabsContent
-              key='two'
-              value='property'
-              className='w-full text-light-1'
-            >
-                <div>two</div>
-  
-            </TabsContent>
+
           
         </Tabs>
       </div>
-              */}
+              
       </section>
   );
 }

@@ -1,13 +1,13 @@
-import Image from "next/image";
-import Link from "next/link";
 import { currentUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
-import { fetchUser, getActivity } from "@/lib/actions/user.actions";
-import { fetchProperty, getApartment } from "@/lib/actions/apartment.actions";
-import ApartmentForm from "@/components/forms/CreateApartment";
+import { fetchUser } from "@/lib/actions/user.actions";
 import { fetchListing } from "@/lib/actions/listing.actions";
 import CreateListing from "@/components/forms/CreateListing";
+import CreateListing2 from "@/components/forms/CreateListing2";
+import { fetchPropertyByUser } from "@/lib/actions/apartment.actions";
+import { fetchPlatformAccountByPlatform, PlatformAccount} from "@/lib/actions/integration.actions";
+import { getSignedImageUrl } from "@/lib/aws";
 
 
 async function Page({ params }: { params: { id: string } }) {
@@ -18,21 +18,32 @@ async function Page({ params }: { params: { id: string } }) {
     if (!userInfo?.onboarded) redirect("/onboarding");
 
 
-    let listing_info = await fetchListing(params.id);
-    console.log(listing_info);
-    if(listing_info.platform_account.owner._id.toString() !== userInfo.id.toString()) return null
+    let listing_data = await fetchListing(params.id);
+    if(listing_data.platform_account.owner._id.toString() !== userInfo.id.toString()) return null
 
-    let listing_data = {
-        link: listing_info.link ? listing_info.link : '',
-        platform: listing_info.platform ? listing_info.platform : '',
-        title: listing_info.title ? listing_info.title : '',
-        apartment: listing_info.apartment ? listing_info.apartment : '',
-        picture: listing_info.picture ? listing_info.picture : '',
-        platform_account: listing_info.platform_account ? listing_info.platform_account : '',
-        internal_id: listing_info.internal_id ? listing_info.internal_id : '',
-        id: listing_info.id ? listing_info.id : '',
-        status: listing_info.status ? listing_info.status : '',
-      }
+    const properties = await fetchPropertyByUser({ userId:userInfo.id });
+    
+    const integrations = await fetchPlatformAccountByPlatform({ userId:userInfo.id });
+    
+    const signedUrl = await getSignedImageUrl(listing_data.picture).catch(() => '/assets/missingApt.webp');
+
+    let listing_info = {
+        link: listing_data.link ? listing_data.link : '',
+        platform: listing_data.platform ? listing_data.platform : '',
+        title: listing_data.title ? listing_data.title : '',
+        apartment_id: listing_data.apartment._id ? listing_data.apartment._id.toString() : '',
+        picture: listing_data.picture ? listing_data.picture : '',
+        platform_account_id: listing_data.platform_account._id ? listing_data.platform_account._id.toString() : '',
+        internal_id: listing_data.internal_id ? listing_data.internal_id : '',
+        id: listing_data.id ? listing_data.id : '',
+        status: listing_data.status ? listing_data.status : '',
+        signedURL:signedUrl,
+      };
+        console.log('TEST######################',listing_info);
+
+        //listing_info.picture= '';
+
+
 
     return (
         <>
@@ -43,7 +54,14 @@ async function Page({ params }: { params: { id: string } }) {
         </div>
         <section className='mt-10 flex flex-col gap-5'>
             <section className='mt-9 bg-dark-2 p-10'>
-                <CreateListing userId={userInfo._id.toString()} btnTitle='Continue' modifiable={false} listing={listing_data} />
+                
+                <CreateListing2 
+                userId={userInfo._id.toString()} 
+                btnTitle='Continue' 
+                modifiable={false} 
+                listing={listing_info} 
+                properties={properties}
+                platformAccounts = {integrations} />
 
             </section>
         </section>

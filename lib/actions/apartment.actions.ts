@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 
 import { FilterQuery, SortOrder } from "mongoose";
 import mongoose from "mongoose";
+import { ProfilePropertyKey } from "aws-sdk/clients/appflow";
 
 interface Params {
     userId: string;
@@ -193,13 +194,21 @@ export async function fetchProperty(apartmentId: string) {
         throw new Error(`Failed to fetch apartment: ${error.message}`);
       }
     }
+
+    export interface PropertySmall{
+      internal_name:string; 
+      address:string;  
+      listingsCount:number; 
+      _id:string; 
+    };
+
     export async function fetchPropertyByUser({
       userId,
       sortBy = "asc",
     }: {
       userId: string;
       sortBy?: SortOrder;
-    }) {
+    }) : Promise<PropertySmall[]> {
       try {
         connectToDB();
         // Créez un objet de requête initial pour filtrer les PlatformAccount.
@@ -211,16 +220,20 @@ export async function fetchProperty(apartmentId: string) {
     
         // Create a query to fetch the apartment based on the search and sort criteria.
         const apartmentQuery = Apartment.find(query)
-          .select('_id internal_name address listings') 
+          .select('internal_name address listings _id') 
           .sort(sortOptions)
   
         // Count the total number of apartment that match the search criteria (without pagination).
     
-        const apartment = await apartmentQuery.exec();
-    
+        const apartments = await apartmentQuery.exec();
         // Check if there are more apartment beyond the current page.
-    
-        return apartment;
+        const returnApartment = apartments.map(apartment => ({
+          internal_name: apartment.internal_name,
+          address: apartment.address,
+          listingsCount: apartment.listings.length,
+          _id: apartment._id.toString()
+        }));
+        return returnApartment;
       } catch (error) {
         console.error("Error fetching apartment:", error);
         throw error;

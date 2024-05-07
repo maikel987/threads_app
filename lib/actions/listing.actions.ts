@@ -119,7 +119,15 @@ export async function fetchListing(listingId: string) {
     let apt = await Listing.findOne({ _id: listingId })
     .populate({path: 'listing_features',model: ListingFeatures})
     .populate({path: 'apartment',model: Apartment})
-    .populate({path: 'platform_account',model: PlatformAccount})
+    .populate({
+      path: 'platform_account',
+      model: PlatformAccount,      
+      populate: {
+        path: "listings", // Populate the author field within children
+        model: Listing,
+        select: "_id picture", 
+    },
+  })
     .exec();
     
     return apt;

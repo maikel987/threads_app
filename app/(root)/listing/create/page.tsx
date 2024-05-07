@@ -7,28 +7,37 @@ import { fetchUser, getActivity } from "@/lib/actions/user.actions";
 import { getApartment } from "@/lib/actions/apartment.actions";
 import ApartmentForm from "@/components/forms/CreateApartment";
 import CreateListing from "@/components/forms/CreateListing";
+import CreateListing2 from "@/components/forms/CreateListing2";
+import { fetchPropertyByUser } from "@/lib/actions/apartment.actions";
+import { fetchPlatformAccountByPlatform, PlatformAccount} from "@/lib/actions/integration.actions";
+
 
 
 async function Page() {
   const user = await currentUser();
   if (!user) return null;
 
-  let userInfo = await fetchUser(user.id);
-  
+  const userInfo = await fetchUser(user.id);
   if (!userInfo?.onboarded) redirect("/onboarding");
+
+  const properties = await fetchPropertyByUser({ userId:userInfo.id });
+  
+  const integrations = await fetchPlatformAccountByPlatform({ userId:userInfo.id });
+
+  
+
 
   let listing_info = {
     link: '',
     platform: '',
     title: '',
-    apartment: '',
+    apartment_id: '',
     picture: '',
-    platform_account: '',
+    platform_account_id: '',
     internal_id: '',
     id: '',
     status:'',
   }
-
   return (
     <>
     <div className='flex w-full flex-col justify-start'>
@@ -41,7 +50,15 @@ async function Page() {
     </div>
     <section className='mt-10 flex flex-col gap-5'>
     <section className='mt-9 bg-dark-2 p-10'>
-      <CreateListing userId={userInfo._id.toString()} btnTitle='Continue' modifiable={true} listing={listing_info} />
+
+      <CreateListing2 
+      userId={userInfo._id.toString()} 
+      btnTitle='Create' 
+      modifiable={true} 
+      listing={listing_info} 
+      properties={properties}
+      platformAccounts = {integrations} />
+    
     </section>
     </section>
     </>

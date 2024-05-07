@@ -5,23 +5,23 @@ export const ListingValidation = z.object({
     link: z
     .string()
     .min(3, { message: "Minimum 3 characters." })
-    .max(300, { message: "Maximum 300 caracters." }),
+    .max(2000, { message: "Maximum 2000 caracters." }),
     platform: z
     .string()
     .min(3, { message: "Minimum 3 characters." })
-    .max(300, { message: "Maximum 300 caracters." }),
+    .max(2000, { message: "Maximum 2000 caracters." }),
     title: z
     .string()
     .min(3, { message: "Minimum 3 characters." })
-    .max(300, { message: "Maximum 300 caracters." }),
+    .max(2000, { message: "Maximum 2000 caracters." }),
     apartment: z
     .string()
     .min(3, { message: "Minimum 3 characters." })
-    .max(300, { message: "Maximum 300 caracters." }),
+    .max(2000, { message: "Maximum 2000 caracters." }),
     platform_account: z
     .string()
     .min(3, { message: "Minimum 3 characters." })
-    .max(300, { message: "Maximum 300 caracters." }),
+    .max(2000, { message: "Maximum 2000 caracters." }),
     
 });
 

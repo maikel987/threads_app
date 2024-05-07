@@ -1,67 +1,66 @@
-import AWS from 'aws-sdk';
-import multer from 'multer';
-import { v4 as uuidv4 } from 'uuid';
+import { NextRequest, NextResponse } from "next/server";
+import { v4 as uuid } from "uuid";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Configurer AWS avec les identifiants et la région depuis les variables d'environnement
-const aws_config = {
-  region: process.env.AWS_REGION,
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-}
 
-AWS.config.update(aws_config);
-const image_bucket = process.env.IMAGE_BUCKET_NAME
 
-// Créer une nouvelle instance du service S3
-const s3 = new AWS.S3();
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION as string,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+  },
+});
 
-// Configurer multer pour stocker les fichiers en mémoire
-const upload = multer({ storage: multer.memoryStorage() });
+async function uploadImageToS3(
+  file: Buffer,
+  fileName: string,
+  type: string
+): Promise<string> {
 
-// Définir un type pour le fichier image
-type ImageFile = Express.Multer.File;
 
-// Fonction pour sauvegarder une image dans AWS S3 et récupérer son nom de fichier
-export const saveImageToS3 = async (file: ImageFile): Promise<string> => {
-  const { originalname, mimetype, buffer } = file;
-  const filename = `${uuidv4()}-${originalname}`;
   const params = {
-    Bucket: image_bucket,
-    Key: filename,
-    Body: buffer,
-    ContentType: mimetype,
-    ACL: 'private',
+    Bucket: process.env.IMAGE_BUCKET_NAME as string,
+    Key: `${Date.now()}-${fileName}`,
+    Body: file,
+    ContentType: type, // Change the content type accordingly
   };
 
-  return new Promise((resolve, reject) => {
-    s3.upload(params, (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(filename);
-      }
-    });
-  });
-};
+  const command = new PutObjectCommand(params);
+  const res = await s3Client.send(command);
 
-// Définir la route API pour sauvegarder une image
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+  const getCommand = new GetObjectCommand(params);
+  const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
 
-// Définir la fonction API pour sauvegarder une image
-export default upload.single('image')(async (req, res) => {
+  return url;
+}
+
+export async function POST(request: NextRequest, response: NextResponse) {
   try {
-    const { file } = req;
+    const formData = await request.formData();
+    console.log(formData, "Form data")
+    const file = formData.get("file") as Blob | null;
     if (!file) {
-      throw new Error('No image uploaded');
+      return NextResponse.json(
+        { error: "File blob is required." },
+        { status: 400 }
+      );
     }
-    const filename = await saveImageToS3(file);
-    res.status(200).json({ filename });
+
+    const mimeType = file.type;
+    const fileExtension = mimeType.split("/")[1];
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const url = await uploadImageToS3(
+      buffer,
+      uuid() + "." + fileExtension,
+      mimeType
+    );
+
+    return NextResponse.json({ success: true, url });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to save image' });
+    console.error("Error uploading image:", error);
+    NextResponse.json({ message: "Error uploading image" });
   }
-});
+}

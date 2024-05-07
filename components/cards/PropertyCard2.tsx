@@ -38,7 +38,7 @@ function PropertyCard2({
   <div className='flex items-center gap-4 p-4'>
     <div className='flex-1'>
       <h5 className='text-lg font-bold'>{internal_name}</h5>
-      <p className='text-gray-400'>{address}</p>
+      <p className='text-gray-400'>{address?address:'Adress missing'}</p>
     </div>
     <Button
       className='user-card_btn px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700'

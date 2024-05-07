@@ -63,6 +63,11 @@ export const propertyTabs = [
   { value: "property", label: "Property", icon: "/assets/members.svg" },
 ];
 
+export const listingTabs = [
+  { value: "connectivity", label: "Connectivity", icon: "/assets/search.svg" },
+  { value: "details", label: "Details", icon: "/assets/members.svg" },
+];
+
 export const integrationHubTabs = [
   { value: "listings", label: "Listings", icon: "/assets/search.svg" },
   { value: "property", label: "Property", icon: "/assets/members.svg" },
