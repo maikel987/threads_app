@@ -1,6 +1,7 @@
 {
   "hosting": {
     "public": "public",
+    "site": "aimyguest-777",
     "ignore": [
       "firebase.json",
       "**/.*",
