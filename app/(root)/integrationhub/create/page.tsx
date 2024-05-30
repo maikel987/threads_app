@@ -24,7 +24,8 @@ async function Page() {
     platform:'',
     platform_account_id:'',
     account_url:'',
-    modifiable : true
+    modifiable : true,
+    apiKey:'',
   }
 
   return (

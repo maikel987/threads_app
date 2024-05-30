@@ -184,3 +184,28 @@
 .color-connected { color: #22c55e; } /* Green 500 for connected */
 .color-refreshing { color: #14b8a6; } /* Teal 500 for refreshing */
 .color-failed { color: #dc2626; } /* Red 700 for failed */
+
+
+.btn-primary {
+  background-color: #FF5A5F; /* couleur du bouton */
+  color: white; /* couleur du texte */
+  font-size: 16px; /* taille du texte */
+  padding: 10px 20px; /* padding du bouton */
+  border: none; /* pas de bordure */
+  border-radius: 8px; /* coins arrondis */
+  display: flex; /* affiche le contenu en flexbox */
+  align-items: center; /* centre le contenu verticalement */
+  justify-content: center; /* centre le contenu horizontalement */
+  cursor: pointer; /* curseur pointeur */
+}
+
+.btn-primary .logo {
+  margin-right: 10px; /* espace entre le logo et le texte */
+  fill: white; /* couleur du logo */
+  width: 24px; /* largeur du logo */
+  height: 24px; /* hauteur du logo */
+}
+
+.btn-primary:hover {
+  background-color: #E04E4D; /* couleur du bouton au survol */
+}

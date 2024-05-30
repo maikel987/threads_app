@@ -105,17 +105,6 @@ try {
 }
 }
 
-interface Params {
-    integrationId: string;
-    userId: string;
-    username: string;
-    password: string;
-    platform: string;
-    platform_account_id: string;
-    account_url: string;
-    path:string;
-  }
-
   export async function refreshIntegration({
     integrationId
   }: {integrationId: string}): Promise<void> {
@@ -136,6 +125,18 @@ interface Params {
     }
   }
 
+  interface Params {
+    integrationId: string;
+    userId: string;
+    username: string;
+    password: string;
+    platform: string;
+    platform_account_id: string;
+    account_url: string;
+    path:string;
+    apiKey:string;
+  }
+
   export async function updateIntegration({
     integrationId,
     userId,
@@ -145,7 +146,9 @@ interface Params {
     platform_account_id,
     account_url,
     path,
+    apiKey,
   }: Params): Promise<void> {
+    console.log("updateIntegration - arrived");
     try {
       await connectToDB();
   
@@ -162,6 +165,7 @@ interface Params {
             account_url:account_url,
             status:IntegrationStatus.REFRESHING,
             updated_at: new Date(),
+            apiKey:apiKey,
           }
         );
       } else {
@@ -174,6 +178,7 @@ interface Params {
             platform_account_id:platform_account_id,
             status:IntegrationStatus.INITIATING,
             account_url:account_url,
+            apiKey:apiKey,
         });
         await newIntegration.save();
       }

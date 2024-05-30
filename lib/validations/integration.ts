@@ -5,33 +5,59 @@ import { platformLogo } from "@/constants";
 const platformKeys: string[] = Object.keys(platformLogo);
 const PlatformEnum = z.enum(platformKeys as [string, ...string[]]);
 
-const baseIntegrationValidation = z.object({
-  username: z
-    .string()
-    .min(1, { message: "Username is required." })
-    .max(200, { message: "Maximum 200 characters." }),
-  password: z
-    .string()
-    .max(200, { message: "Maximum 200 characters." })
-    .optional(),
-  platform: PlatformEnum,
-  platform_account_id: z
-    .string()
-    .min(1, { message: "Platform account ID is required." })
-    .max(200, { message: "Maximum 200 characters." }),
-  account_url: z
-    .string()
-    .max(200, { message: "Maximum 200 characters." })
-    .optional(),
-});
-
-export const IntegrationValidation = baseIntegrationValidation.refine((data) => {
-  // Rendre account_url obligatoire si la platform est "airbnb"
-  if (data.platform === "airbnb") {
-    return !!data.account_url; // Vérifie que account_url n'est pas vide
+export const IntegrationValidation = z.object({
+  username: z.string().optional(),
+  password: z.string().optional(),
+  platform: PlatformEnum.refine(data => data !== undefined, {
+    message: "Platform selection is required!",
+  }),
+  platform_account_id: z.string().optional(),
+  account_url: z.string().optional(),
+  apiKey: z.string().optional(),
+}).superRefine((data, ctx) => {
+  switch (data.platform) {
+    case "airbnb":
+      if (!data.account_url) {
+        ctx.addIssue({
+          path: ['account_url'],
+          message: 'Account URL is required for Airbnb.',
+          code: z.ZodIssueCode.custom,
+        });
+      }
+      break;
+    case "vrbo":
+    case "booking":
+      if (!data.username) {
+        ctx.addIssue({
+          path: ['username'],
+          message: `Username is required for ${data.platform}.`,
+          code: z.ZodIssueCode.custom,
+        });
+      }
+      if (!data.password) {
+        ctx.addIssue({
+          path: ['password'],
+          message: `Password is required for ${data.platform}.`,
+          code: z.ZodIssueCode.custom,
+        });
+      }
+      if (!data.platform_account_id) {
+        ctx.addIssue({
+          path: ['platform_account_id'],
+          message: `Platform Account ID is required for ${data.platform}.`,
+          code: z.ZodIssueCode.custom,
+        });
+      }
+      break;
+    case "bed24":
+    case "hospitable":
+      if (!data.apiKey) {
+        ctx.addIssue({
+          path: ['apiKey'],
+          message: `API Key is required for ${data.platform}.`,
+          code: z.ZodIssueCode.custom,
+        });
+      }
+      break;
   }
-  return true; // Pas de condition pour les autres valeurs de platform
-}, {
-  message: "Account URL is required for Airbnb.",
-  path: ["account_url"], // Spécifie le chemin de la propriété affectée par cette validation
 });

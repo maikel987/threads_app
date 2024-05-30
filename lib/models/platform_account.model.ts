@@ -14,8 +14,8 @@ const platformAccountSchema = new Schema({
   },
   username: {
     type: String,
-    required: true,
-    unique: true,
+    required: false,
+
   },
   password: {
     type: String,
@@ -30,9 +30,13 @@ const platformAccountSchema = new Schema({
     type: String,
     required: false,
   },
+  apiKey: {
+    type: String,
+    required: false,
+  },
   platform_account_id: {
     type: String,
-    required: true,
+    required: false,
   },  
   account_url: {
     type: String,

@@ -77,5 +77,7 @@ export const platformLogo={
   'airbnb': "/assets/airbnb.jpeg",
   'booking': "/assets/booking.png",
   'vrbo': '/assets/vrbo.png',
+  'bed24' :'/assets/bed24Logo.png',
+  'hospitable' :'/assets/bed24Logo.png',
 }
 
