@@ -8,9 +8,11 @@ interface Props {
   pageNumber: number;
   isNext: boolean;
   path: string;
+  pageMax?: number;  // Rendu optionnel
+
 }
 
-function Pagination({ pageNumber, isNext, path }: Props) {
+function Pagination({ pageNumber, isNext, path, pageMax }: Props) {
   const router = useRouter();
 
   const handleNavigation = (type: string) => {

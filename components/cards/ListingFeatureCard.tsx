@@ -27,14 +27,14 @@ const ListingFeatureCard = ({ listing_feature }:{listing_feature:Props}) => {
   // Format date using date-fns or similar library
   const updatedAt = format(new Date(listing_feature.updated_at), 'dd/MM/yyyy');
 
-  const formattedAmenities = listing_feature.amenities.map((item) =>
+  const formattedAmenities = listing_feature.amenities?listing_feature.amenities.map((item) =>
   item.split('\n').map((line, index, arr) => (
     <React.Fragment key={index}>
       {line}
       {index !== arr.length - 1 && <br />} {/* Ajouter un saut de ligne sauf après la dernière ligne */}
     </React.Fragment>
   ))
-);
+):[];
 
   return (
     <section>
@@ -42,7 +42,7 @@ const ListingFeatureCard = ({ listing_feature }:{listing_feature:Props}) => {
       <div className='flex-1'>
         <h5 className='text-lg font-bold'>Amenities</h5>
         <p className='text-white'>
-          {listing_feature.amenities.length > 0 ? formattedAmenities : 'Missing'}
+          {listing_feature.amenities?.length > 0 ? formattedAmenities : 'Missing'}
         </p>
       </div>
     </div>

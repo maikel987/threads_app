@@ -10,6 +10,10 @@ import { connectToDB } from "../mongoose";
 import Listing from "../models/listing.model";
 import { revalidatePath } from "next/cache";
 import { IntegrationStatus } from "../models/integrationStatus";
+import Apartment from "../models/apartment.model";
+import ListingFeatures, { IListingFeatures } from "../models/listing_features.model";
+import { platform } from "os";
+import { convertListingDataToVectors } from "./pinecone.actions";
 
 async function createPlatformAccount(userId:string) {
     try {
@@ -105,7 +109,7 @@ try {
 }
 }
 
-  export async function refreshIntegration({
+export async function refreshIntegration({
     integrationId
   }: {integrationId: string}): Promise<void> {
     try {
@@ -125,7 +129,7 @@ try {
     }
   }
 
-  interface Params {
+interface Params {
     integrationId: string;
     userId: string;
     username: string;
@@ -137,7 +141,12 @@ try {
     apiKey:string;
   }
 
-  export async function updateIntegration({
+interface PlatformAccountType {
+    _id: string;
+  }
+  
+
+export async function updateIntegration({
     integrationId,
     userId,
     username,
@@ -147,51 +156,70 @@ try {
     account_url,
     path,
     apiKey,
-  }: Params): Promise<void> {
+  }: Params): Promise<PlatformAccountType> {
+
     console.log("updateIntegration - arrived");
     try {
       await connectToDB();
-  
+
+      const user = await User.findOne({ _id: new mongoose.Types.ObjectId(userId)});
+      if (!user) {
+        throw new Error("User not found with ID: " + userId);
+      }
+      console.log(userId,user._id);
+
+      let integration;
+
       if (integrationId) {
-        // Mise à jour d'un appartement existant
-        await PlatformAccount.findOneAndUpdate(
+        integration = await PlatformAccount.findOneAndUpdate(
           { _id: integrationId },
           {
-            owner : userId,
-            username:username,
-            password:password,
-            platform:platform,
-            platform_account_id:platform_account_id,
-            account_url:account_url,
-            status:IntegrationStatus.REFRESHING,
+            owner: userId,
+            username,
+            password,
+            platform,
+            platform_account_id,
+            account_url,
+            status: IntegrationStatus.REFRESHING,
             updated_at: new Date(),
-            apiKey:apiKey,
-          }
+            apiKey
+          },
+          { new: true }  // Return the updated document
         );
       } else {
-        // Création d'un nouvel appartement
         const newIntegration = new PlatformAccount({
-            owner : userId,
-            username:username,
-            password:password,
-            platform:platform,
-            platform_account_id:platform_account_id,
-            status:IntegrationStatus.INITIATING,
-            account_url:account_url,
-            apiKey:apiKey,
+          owner: userId,
+          username,
+          password,
+          platform,
+          platform_account_id,
+          status: IntegrationStatus.INITIATING,
+          account_url,
+          apiKey
         });
-        await newIntegration.save();
+
+        integration = await newIntegration.save();
+        user.platform_account.push(integration._id);
+        await user.save();
       }
-  
+
+      if (!integration) {
+        throw new Error(`Integration failed to update/create for user ${userId}`);
+      }
+
       if (path === `/integrationhub/edit/${integrationId}`) {
-        revalidatePath(path);
+        await revalidatePath(path);
       }
+
+      return {_id:integration._id};
     } catch (error: any) {
+      console.error(`Failed to create/update integration: ${error.message}`);
       throw new Error(`Failed to create/update integration: ${error.message}`);
     }
   }
 
-  export async function fetchIntegration(integration_id: string) {
+
+export async function fetchIntegration(integration_id: string) {
     try {
       connectToDB();
 
@@ -205,7 +233,22 @@ try {
       throw new Error(`Failed to fetch integration: ${error.message}`);
     }
   }
-  export interface PlatformAccount{
+
+export async function getIntegration(integration_id: string) {
+    try {
+      connectToDB();
+
+      let integration = await PlatformAccount.findOne({ _id: integration_id })
+      .exec();
+      
+      return integration;
+
+    } catch (error: any) {
+      throw new Error(`Failed to fetch integration: ${error.message}`);
+    }
+  }
+
+export interface PlatformAccount{
     listingsCount:number; 
     username:string; 
     platform_account_id:string; 
@@ -214,7 +257,7 @@ try {
 
   };
 
-  export async function fetchPlatformAccountByPlatform({
+export async function fetchPlatformAccountByPlatform({
     userId,
     platform,
     sortBy = "asc",
@@ -254,3 +297,118 @@ try {
       throw error;
     }
   }
+
+  
+export interface GeneralProperty {
+    id: string;
+    name: string;
+    picture: string;
+    address: any;
+    summary: string;
+    description: string[];
+    amenities: string[];
+    guest?: number;        
+    bedroom?: number;      
+    bed?: number;          
+    bathroom?: number; 
+    rules: string[];
+    safety:string[];
+    sleeping:string[];
+    checkin: string;
+    checkout: string;
+    exist:boolean;
+    coordinates: {
+      latitude: string;
+      longitude: string;
+    };
+  }
+  
+const insertPropertyData = async (property: GeneralProperty, platformAccountId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId) => {
+
+    console.log('userId from insertPropertyData',userId);
+
+    const platformAccount = await PlatformAccount.findOne({ _id: platformAccountId });
+
+    // Insérer dans la collection apartment
+    const apartment = await Apartment.create({
+      internal_name: property.name,
+      address: property.address,
+      owner: userId,
+      coordinates: property.coordinates,
+      created_at: new Date(),
+      updated_at: new Date(),
+      urgent_number:"0000", //ICI a rajouter de puis l'import du compte
+    });
+  
+    // Mettre à jour l'utilisateur pour inclure la référence à l'appartement
+    await User.findByIdAndUpdate(userId, {
+      $push: { apartments: apartment._id },
+    });
+  
+    // Insérer dans la collection listing
+    const listing = await Listing.create({
+      apartment: apartment._id,
+      internal_id: property.id,
+      platform_account: platformAccountId,
+      platform:platformAccount.platform,
+      picture: property.picture,
+      title: property.name,
+      status: 'housing_not_connected', //ICI a corriger
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+  
+    // Mettre à jour l'appartement pour inclure la référence au listing
+    await Apartment.findByIdAndUpdate(apartment._id, {
+      $push: { listings: listing._id },
+    });
+    platformAccount.listings.push(listing._id);
+    await platformAccount.save();
+  
+    // Insérer dans la collection listingfeatures
+    const listingFeatures = await ListingFeatures.create({
+      listing: listing._id,
+      guest:property.guest,
+      bedroom:property.bedroom,
+      bed:property.bed,
+      bathroom:property.bathroom,
+      amenities: property.amenities,
+      description: property.description,
+      created_at: new Date(),
+      updated_at: new Date(),
+      rules: property.rules,
+      safety: property.safety,
+      sleeping: property.sleeping,
+      checkin: property.checkin,
+      checkout: property.checkout,
+    });
+  
+    // Mettre à jour le listing pour inclure la référence aux features
+    await Listing.findByIdAndUpdate(listing._id, {
+      $set: { listing_features: listingFeatures._id },
+    });
+
+    await convertListingDataToVectors(listingFeatures, listing._id.toString(), apartment._id.toString());
+  };
+  
+export const insertAllProperties = async (properties: GeneralProperty[], platformAccount_id: string, user_id:string) => {
+    const platformAccountId = new mongoose.Types.ObjectId(platformAccount_id); 
+    const userId = new mongoose.Types.ObjectId(user_id); 
+    for (const property of properties) {
+      await insertPropertyData(property, platformAccountId, userId);
+    }
+  
+    console.log('All properties successfully inserted');
+    };
+
+  // Function to check if the property ID already exists in the database
+export const isListingPresent = async (listingId: string): Promise<boolean> => {
+    try {
+      const existingProperty = await Listing.findOne({ internal_id: listingId });
+      return !!existingProperty;  // returns true if the property exists, otherwise false
+    } catch (error) {
+      console.error('Error checking property presence:', error);
+      throw error;
+    }
+  };
+

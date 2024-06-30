@@ -27,7 +27,7 @@ function ListingConnectionCard({
   internal_id,
 
 }: Props) {
-
+  
   return (
     <article className='bg-dark-2 rounded-lg shadow-md overflow-hidden text-white w-full'>
 

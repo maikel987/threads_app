@@ -1,8 +1,17 @@
-import mongoose from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+
+interface IConversationIdArchive extends Document {
+  _id: mongoose.Types.ObjectId;
+  id: string;
+  status: string;
+  summary?: string;  // Optional since it has a default value and may not be required on creation
+  created_at?: Date;
+  updated_at?: Date;
+}
+
 const { Schema } = mongoose;
 
-// Le nom est ajusté pour être plus conventionnel et clair
-const conversationIdArchiveSchema = new Schema({
+const conversationIdArchiveSchema = new Schema<IConversationIdArchive>({
   _id: Schema.Types.ObjectId,
 
   id: {
@@ -27,6 +36,6 @@ const conversationIdArchiveSchema = new Schema({
   },
 });
 
-const ConversationIdArchive = mongoose.models.ConversationIdArchive || mongoose.model('ConversationIdArchive', conversationIdArchiveSchema, 'conversation_id_archives');
+const ConversationIdArchive = mongoose.models.ConversationIdArchive || mongoose.model<IConversationIdArchive>('ConversationIdArchive', conversationIdArchiveSchema, 'conversation_id_archives');
 
 export default ConversationIdArchive;

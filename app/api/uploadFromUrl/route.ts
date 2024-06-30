@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import axios from 'axios';
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION as string,
@@ -15,10 +16,12 @@ async function uploadImageToS3(
   file: Buffer,
   fileName: string,
   type: string
-): Promise<string> {
+): Promise<{ url: string, fileKey: string }> {
+  const fileKey = `${Date.now()}-${fileName}`;
+
   const params = {
     Bucket: process.env.IMAGE_BUCKET_NAME as string,
-    Key: `${Date.now()}-${fileName}`,
+    Key: fileKey,
     Body: file,
     ContentType: type,
   };
@@ -26,36 +29,37 @@ async function uploadImageToS3(
   const command = new PutObjectCommand(params);
   await s3Client.send(command);
 
-  const getCommand = new GetObjectCommand(params);
+  const getCommand = new GetObjectCommand({ ...params });
   const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
 
-  return url;
+  return { url, fileKey };
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, response: NextResponse) {
   try {
-    const formData = await request.formData();
-    console.log(formData, "Form data");
-    const file = formData.get("file") as Blob | null;
-    if (!file) {
+    const { url } = await request.json();
+    if (!url) {
       return NextResponse.json(
-        { error: "File blob is required." },
+        { error: "URL is required." },
         { status: 400 }
       );
     }
 
-    const mimeType = file.type;
-    const fileExtension = mimeType.split("/")[1];
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const url = await uploadImageToS3(
+    const res = await axios.get(url, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(res.data, 'binary');
+    const contentType = res.headers['content-type'];
+    const fileExtension = contentType.split("/")[1];
+    const fileName = uuid() + "." + fileExtension;
+
+    const { url: uploadedUrl, fileKey } = await uploadImageToS3(
       buffer,
-      uuid() + "." + fileExtension,
-      mimeType
+      fileName,
+      contentType
     );
 
-    return NextResponse.json({ success: true, url });
+    return NextResponse.json({ success: true, url: uploadedUrl, fileKey });
   } catch (error) {
     console.error("Error uploading image:", error);
-    return NextResponse.json({ message: "Error uploading image" }, { status: 500 });
+    return NextResponse.json({ error: "Error uploading image", status: 500 });
   }
 }

@@ -62,8 +62,8 @@ const ApartmentForm = ({  btnTitle, userId, apartment_info }: Props) => {
         userId:userId,
         property_id:apartment_info.id,
         internal_name:values.internal_name,
-        checkin_process:values.checkin_process,
-        address:values.address,
+        checkin_process:values.checkin_process?values.checkin_process:'',
+        address:values.address?values.address:'',
         urgent_number:values.urgent_number,
         path:pathname,
     });

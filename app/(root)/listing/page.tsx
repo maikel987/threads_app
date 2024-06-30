@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { fetchUser, getActivity } from "@/lib/actions/user.actions";
 import Searchbar from "@/components/shared/Searchbar";
-import Pagination from "@/components/shared/Pagination";
+import Pagination from "@/components/shared/Pagination3";
 import { getSignedImageUrl } from '@/lib/aws';
 import { fetchListings } from "@/lib/actions/listing.actions";
 import ListingCard from "@/components/cards/ListingCard";
@@ -123,9 +123,10 @@ async function Page({
       </div>
 
       <Pagination
-        path='property'
+        path='listing'
         pageNumber={searchParams?.page ? +searchParams.page : 1}
         isNext={result.isNext}
+        pageMax={result.pageMax}
       />
     </section>
   );

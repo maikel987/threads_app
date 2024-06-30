@@ -1,21 +1,35 @@
-import mongoose from 'mongoose';
-import { IntegrationStatus } from './integrationStatus';
+import mongoose, { Document } from 'mongoose';
+import { IntegrationStatus } from './integrationStatus'; // Ensure this import is correct
+
+interface IPlatformAccount extends Document {
+  listings: mongoose.Types.ObjectId[];
+  owner: mongoose.Types.ObjectId;
+  username?: string;
+  password?: string;
+  status: IntegrationStatus; // Assuming IntegrationStatus is an enum
+  platform?: string;
+  apiKey?: string;
+  platform_account_id?: string;
+  account_url?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
 const { Schema } = mongoose;
 
-const platformAccountSchema = new Schema({
+const platformAccountSchema = new Schema<IPlatformAccount>({
   listings: [{
     type: Schema.Types.ObjectId,
-    ref: 'Listing', // Remplacez 'Listing' par le nom exact du modèle référencé si différent
+    ref: 'Listing',
   }],
   owner: {
     type: Schema.Types.ObjectId,
-    ref: 'User', // Remplacez 'User' par le nom exact du modèle référencé si différent
+    ref: 'User',
     required: true,
   },
   username: {
     type: String,
     required: false,
-
   },
   password: {
     type: String,
@@ -24,7 +38,7 @@ const platformAccountSchema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: IntegrationStatus,
+    enum: Object.values(IntegrationStatus), // Ensure IntegrationStatus is an enum and correctly imported
   },
   platform: {
     type: String,
@@ -52,6 +66,5 @@ const platformAccountSchema = new Schema({
   },
 });
 
-const PlatformAccount = mongoose.models.PlatformAccount || mongoose.model('PlatformAccount', platformAccountSchema);
-
+const PlatformAccount = mongoose.models.PlatformAccount || mongoose.model<IPlatformAccount>('PlatformAccount', platformAccountSchema);
 export default PlatformAccount;

@@ -26,6 +26,7 @@ async function Page({ params }: { params: { id: string } }) {
         platform:integration_info.platform?integration_info.platform:'',
         platform_account_id:integration_info.platform_account_id?integration_info.platform_account_id:'',
         account_url:integration_info.account_url?integration_info.account_url:'',
+        apiKey:integration_info.apiKey?integration_info.apiKey:'',
         modifiable : integration_info.listings.length < 1
       }
 

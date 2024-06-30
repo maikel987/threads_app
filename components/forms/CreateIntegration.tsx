@@ -33,7 +33,9 @@ import { isBase64Image } from "@/lib/utils";
 
 
 import { IntegrationValidation } from "@/lib/validations/integration";
-import { updateIntegration } from "@/lib/actions/integration.actions";
+import { insertAllProperties, updateIntegration } from "@/lib/actions/integration.actions";
+import { fetchAuthenticationSetupBeds24 } from "@/lib/actions/beds24.actions";
+import { fetchUserAndBilling, fetchAllPropertiesHospitable } from "@/lib/actions/hospitable.actions";
 
 interface Props {
   btnTitle: string;
@@ -89,17 +91,47 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
     return match ? match[1] : null;
   }
 
+
+
   const onSubmit = async (values: z.infer<typeof IntegrationValidation>) => {
 
     if (values.account_url && !values.platform_account_id) {
       const platform_id = getUserIdFromUrl(values.account_url);
       values.platform_account_id = platform_id ? platform_id : '';
     }
+    let external_data;
+    let username;
+    if (values.platform === 'beds24' && values.apiKey){
 
-    await updateIntegration({
+        try {
+          external_data = await fetchAuthenticationSetupBeds24(values.apiKey, "aimyguest");
+          console.log('API Response:', external_data);
+      
+          if (external_data.success === false) {
+            console.error('Error:', external_data.error);
+          } else {
+            console.log('Token 1:', external_data.token_1);
+            console.log('Expires In 1:', external_data.expiresIn_1);
+            console.log('Refresh Token:', external_data.refreshToken);
+            console.log('Token 2:', external_data.token_2);
+            console.log('Expires In 2:', external_data.expiresIn_2);
+          }
+        } catch (error) {
+          console.error('Unexpected error:', error);
+        }
+        
+
+    }else if (values.platform === 'hospitable' && values.apiKey){
+      external_data = await fetchUserAndBilling(values.apiKey);
+      username = values.username ? values.username : external_data?.name
+      
+    }else{
+      username = values.username ? values.username : ''
+    }
+    const platform_account = await updateIntegration({
       integrationId: integration_info.id,
       userId: userId,
-      username: values.username ? values.username : '',
+      username: username ? username : '',
       password: values.password ? values.password : '',
       platform: values.platform,
       platform_account_id: values.platform_account_id ? values.platform_account_id : "",
@@ -107,6 +139,31 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
       apiKey: values.apiKey ? values.apiKey : '',
       path: pathname,
     });
+
+    // Integration Property
+
+    if (values.platform === 'hospitable' && values.apiKey){
+
+
+      try {
+        // Récupérer toutes les propriétés de l'API Hospitable
+        const properties = await fetchAllPropertiesHospitable(values.apiKey);
+        console.log('Propriétés récupérées et transformées:', properties);
+
+
+        // Insérer les propriétés dans la base de données
+        await insertAllProperties(properties, platform_account._id, userId);
+        console.log('Toutes les propriétés ont été insérées avec succès dans la base de données.');
+
+
+      } catch (error) {
+        console.error('Erreur lors du traitement:', error);
+      }
+    }
+
+    
+
+    // Integration Conversation
   
     if (pathname === `/integrationhub/edit/${integration_info.id}`) {
       router.back();
@@ -125,11 +182,15 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
     setIsAirbnbClicked(true); // Marque le bouton comme cliqué
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Empêche la soumission par défaut du formulaire
     if (isAirbnbClicked) {
-      e.preventDefault(); // Empêche l'envoi automatique du formulaire
+      // Si le bouton Airbnb a été cliqué, ouvrir le lien et soumettre le formulaire manuellement
       setIsAirbnbClicked(false); // Réinitialise l'état
-      onSubmit(form.getValues()); // Soumet les valeurs du formulaire
+      await onSubmit(form.getValues()); // Soumet les valeurs du formulaire
+    } else {
+      // Pour les autres cas, soumet directement les valeurs du formulaire
+      await onSubmit(form.getValues());
     }
   };
 
@@ -138,9 +199,10 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
     <Form {...form}>
       <form
         ref={formRef}
+        method="post"
         className="flex flex-col justify-start gap-10"
-        onSubmit={handleSubmit}
-      >
+        onSubmit={form.handleSubmit(onSubmit)}  // Modification ici
+        >
 
       <FormField
         control={form.control}
@@ -181,7 +243,7 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
         )}
       />
 
-    {((selectedPlatform === 'vrbo')||(selectedPlatform === 'booking')) && (        
+    {((selectedPlatform === 'vrbo')||(selectedPlatform === 'booking')||(selectedPlatform === 'hospitable')||(selectedPlatform === 'beds24')) && (        
       <FormField
           control={form.control}
           name='username'
@@ -291,7 +353,7 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
         />
       )}
 
-      {((selectedPlatform === 'hospitable')||(selectedPlatform === 'bed24')) && (        
+      {((selectedPlatform === 'hospitable')||(selectedPlatform === 'beds24')) && (        
         <FormField
           control={form.control}
           name='apiKey'
@@ -304,7 +366,7 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
                 <Input
                   type='text'
                   className={
-                    (integration_info.modifiable || !integration_info.account_url)
+                    (integration_info.modifiable || !integration_info.apiKey)
                       ? 'account-form_input no-focus' 
                       : 'cursor-not-allowed bg-gray-700 text-gray-300 border-gray-600'
                   }

@@ -170,8 +170,9 @@ export async function fetchProperties({
 
         // Check if there are more users beyond the current page.
         const isNext = totalApartmentsCount > skipAmount + apartments.length;
+        const pageMax = Math.ceil(totalApartmentsCount / pageSize);
 
-        return { apartments, isNext };
+        return { apartments, isNext, pageMax };
       } catch (error) {
         console.error("Error fetching users:", error);
         throw error;

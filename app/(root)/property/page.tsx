@@ -8,7 +8,7 @@ import { fetchProperties, getApartment } from "@/lib/actions/apartment.actions";
 import ApartmentForm from "@/components/forms/CreateApartment";
 import Searchbar from "@/components/shared/Searchbar";
 import PropertyCard from "@/components/cards/PropertyCard";
-import Pagination from "@/components/shared/Pagination";
+import Pagination from "@/components/shared/Pagination3";
 import { getSignedImageUrl } from '@/lib/aws';
 import PropertyCard2 from "@/components/cards/PropertyCard2";
 
@@ -98,6 +98,7 @@ async function Page({
         path='property'
         pageNumber={searchParams?.page ? +searchParams.page : 1}
         isNext={result.isNext}
+        pageMax={result.pageMax}
       />
     </section>
   );

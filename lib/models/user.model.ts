@@ -1,7 +1,24 @@
-import mongoose from "mongoose";
+import mongoose, { Document } from "mongoose";
 
-const userSchema = new mongoose.Schema({
-  _id: mongoose.Schema.Types.ObjectId, // Utilisation automatique de l'identifiant généré par MongoDB
+interface IUser extends Document {
+  internal_id: string;
+  username: string;
+  name: string;
+  image?: string;
+  bio?: string;
+  threads: mongoose.Types.ObjectId[];
+  onboarded?: boolean;
+  communities: mongoose.Types.ObjectId[];
+  apartments: mongoose.Types.ObjectId[];
+  platform_account: mongoose.Types.ObjectId[];
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+const { Schema } = mongoose;
+
+const userSchema = new Schema<IUser>({
+  _id: { type: Schema.Types.ObjectId, auto: true }, // MongoDB automatically generates and assigns the _id
   internal_id: {
     type: String,
     required: true,
@@ -20,7 +37,7 @@ const userSchema = new mongoose.Schema({
   bio: String,
   threads: [
     {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Thread",
     },
   ],
@@ -30,30 +47,27 @@ const userSchema = new mongoose.Schema({
   },
   communities: [
     {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Community",
     },
   ],
   apartments: [{
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Apartment",
   }],
   platform_account: [{
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "PlatformAccount",
   }],
   created_at: {
     type: Date,
     default: Date.now,
-  },  
+  },
   updated_at: {
     type: Date,
     default: Date.now,
   },
 });
 
-
-
-const User = mongoose.models.User || mongoose.model("User", userSchema);
-
+const User = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 export default User;

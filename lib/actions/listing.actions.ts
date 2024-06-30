@@ -7,7 +7,7 @@ import User from "../models/user.model";
 
 import Apartment from "../models/apartment.model";
 import Listing from "../models/listing.model";
-import ListingFeatures from "../models/listing_features.model";
+import ListingFeatures, { IListingFeatures } from "../models/listing_features.model";
 
 import { revalidatePath } from "next/cache";
 
@@ -15,6 +15,7 @@ import { FilterQuery, SortOrder } from "mongoose";
 import mongoose from "mongoose";
 import { ListingStatus } from "../models/listingstatus";
 import PlatformAccount from "../models/platform_account.model";
+import { GeneralProperty } from "./integration.actions";
 
 export async function fetchListings({
     userId,
@@ -78,8 +79,10 @@ export async function fetchListings({
 
       // Check if there are more users beyond the current page.
       const isNext = totalListingsCount > skipAmount + listings.length;
+      const pageMax = Math.ceil(totalListingsCount / pageSize);
 
-      return { listings, isNext };
+
+      return { listings, isNext, pageMax};
     } catch (error) {
       console.error("Error fetching listings:", error);
       throw error;
@@ -108,6 +111,24 @@ export async function listingStatusEvolution({internal_id}:{internal_id:string})
   } catch (error) {
       console.error("Error updating listing status:\t", error);
   throw error;
+  }
+}
+
+export async function fetchListingAndPlatformAccount(listingId: string) {
+  try {
+    connectToDB();
+    console.log('apartmentId : \t',listingId)
+
+    let apt = await Listing.findOne({ _id: listingId })
+    .populate({
+      path: 'platform_account',
+      model: PlatformAccount,      
+      }).exec();
+    
+    return apt;
+
+  } catch (error: any) {
+    throw new Error(`Failed to fetch apartment: ${error.message}`);
   }
 }
 
@@ -187,3 +208,66 @@ export async function updateListing({
     throw new Error(`Failed to create/update listing: ${error.message}`);
   }
 }
+
+export const updateListingData = async (property: GeneralProperty, listingId: mongoose.Types.ObjectId) => {
+  console.log('property:', property);
+  try {
+    // Check if the listing already exists
+    const existingListing = await Listing.findOne({ _id: listingId });
+
+    if (!existingListing) {
+      console.error('No listing found with the provided ID.');
+      return false;  // Indicates the listing for update was not found
+    }
+
+    // Update existing listing
+    existingListing.title = property.name;
+    existingListing.updated_at = new Date();
+    await existingListing.save();
+
+    // Check if listing features already exist
+    const existingFeatures = await ListingFeatures.findOne({ _id: existingListing.listing_features._id });
+
+    if (!existingFeatures) {
+      console.error('No listing features found for the given listing ID.');
+      return false;  // Indicates features for update were not found
+    }
+
+    // Update existing listing features and get the updated instance
+    const updatedFeatures = await ListingFeatures.findByIdAndUpdate(
+      existingFeatures._id, 
+      {
+        guest: property.guest,
+        bedroom: property.bedroom,
+        bed: property.bed,
+        bathroom: property.bathroom,
+        amenities: property.amenities,
+        description: property.description,
+        rules: property.rules,
+        safety: property.safety,
+        sleeping: property.sleeping,
+        checkin: property.checkin,
+        checkout: property.checkout,
+        updated_at: new Date()
+      }, 
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedFeatures) {
+      console.error('Failed to update listing features.');
+      return false;
+    }
+
+    // Return updated data identifiers and the updated features instance
+    return {
+      listingFeatures: updatedFeatures,  // returning the updated instance
+      listingId: listingId.toString(),  // listing ID as string
+      apartmentId: existingListing.apartment._id.toString()  // apartment ID from listing as string
+    };
+  } catch (error) {
+    console.error('Error updating listing data:', error);
+    return false;  // Return false if any exception occurs
+  }
+};
+
+
