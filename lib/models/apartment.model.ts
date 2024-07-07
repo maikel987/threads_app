@@ -4,6 +4,7 @@ import mongoose, { Document } from "mongoose";
 export interface IApartment extends Document {
   internal_name?: string;
   checkin_process?: string;
+  pms_id?: string;
   address?: string;
   urgent_number?: string;
   owner: mongoose.Types.ObjectId;
@@ -22,6 +23,10 @@ const apartmentSchema = new mongoose.Schema<IApartment>({
   internal_name: { 
     type: String,
     unique: false,
+    required: false,
+  },
+  pms_id: {
+    type: String,
     required: false,
   },
   checkin_process: {
