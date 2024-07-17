@@ -124,7 +124,7 @@ async function Page({ params }: { params: { id: string } }) {
         platform={listingInfo.platform}
         internal_id={listingInfo.internal_id}
         id={listingInfo.id}
-        conversation_number={listingInfo.conversation_ID_archives.length}
+        conversation_number={listingInfo.reservation?listingInfo.reservation.length:0}
         updated_at={listingInfo.updated_at}
       />
 

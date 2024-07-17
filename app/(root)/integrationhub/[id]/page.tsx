@@ -109,7 +109,7 @@ async function Page({ params,searchParams }: { params: { id: string },  searchPa
                 <>
               {platformAccountDetails.listings.map((listing:ListingInfo)=>(
                 <ListingCard3
-                dbId={listing._id}
+                dbId={listing._id.toString()}
                 key={listing.internal_id}
                 internal_id = {listing.internal_id}
                 link = {listing.link}

@@ -1,7 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 import { IntegrationStatus } from './integrationStatus'; // Ensure this import is correct
 
-interface IPlatformAccount extends Document {
+export interface IPlatformAccount extends Document {
   listings: mongoose.Types.ObjectId[];
   owner: mongoose.Types.ObjectId;
   username?: string;

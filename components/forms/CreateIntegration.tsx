@@ -24,18 +24,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-
-import { useUploadThing } from "@/lib/uploadthing";
-import { isBase64Image } from "@/lib/utils";
-
 
 import { IntegrationValidation } from "@/lib/validations/integration";
-import { insertAllProperties, updateIntegration } from "@/lib/actions/integration.actions";
+import { updateIntegration } from "@/lib/actions/integration.actions";
 import { fetchAuthenticationSetupBeds24 } from "@/lib/actions/beds24.actions";
-import { fetchUserAndBilling, fetchAllPropertiesHospitable } from "@/lib/actions/hospitable.actions";
+import { fetchUserAndBilling, fetchAllPropertiesHospitable, fetchReservations, IHospitableMessage, fetchMessages, onboardHospitable } from "@/lib/actions/hospitable.actions";
+
 
 interface Props {
   btnTitle: string;
@@ -53,7 +51,7 @@ interface Props {
 }
 
 const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
-
+  const { toast } = useToast()
   const router = useRouter();
   const pathname = usePathname();
   
@@ -94,7 +92,12 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
 
 
   const onSubmit = async (values: z.infer<typeof IntegrationValidation>) => {
-
+    console.log("let toast");
+    /*toast({
+      title: "Synchronization Starting",
+      description: `${values.platform} - Synchronization of listings, reservations, and messages is underway. This process may take some time. Please be patient.`,
+    });
+    */
     if (values.account_url && !values.platform_account_id) {
       const platform_id = getUserIdFromUrl(values.account_url);
       values.platform_account_id = platform_id ? platform_id : '';
@@ -140,30 +143,24 @@ const IntegrationForm = ({  btnTitle, userId, integration_info }: Props) => {
       path: pathname,
     });
 
-    // Integration Property
-
     if (values.platform === 'hospitable' && values.apiKey){
-
-
-      try {
-        // Récupérer toutes les propriétés de l'API Hospitable
-        const properties = await fetchAllPropertiesHospitable(values.apiKey);
-        console.log('Propriétés récupérées et transformées:', properties);
-
-
-        // Insérer les propriétés dans la base de données
-        await insertAllProperties(properties, platform_account._id, userId);
-        console.log('Toutes les propriétés ont été insérées avec succès dans la base de données.');
-
-
-      } catch (error) {
+      onboardHospitable(values.apiKey, platform_account._id, userId)
+      .then(() => {
+        toast({
+          title: "Synchronization Completed",
+          description: "All data has been successfully synchronized.",
+          variant: "default",  // Vert si votre bibliothèque supporte 'success' comme indicateur de vert
+        });
+      })
+      .catch(error => {
         console.error('Erreur lors du traitement:', error);
-      }
+        toast({
+          title: "Synchronization Failed",
+          description: "An error occurred during data synchronization. Please try again.",
+          variant: "destructive",
+        });
+      });
     }
-
-    
-
-    // Integration Conversation
   
     if (pathname === `/integrationhub/edit/${integration_info.id}`) {
       router.back();

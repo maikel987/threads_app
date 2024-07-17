@@ -1,7 +1,11 @@
 "use server";
-import axios from 'axios';
-import {GeneralProperty, isListingPresent} from "./integration.actions"
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import {GeneralProperty, insertAllProperties, integrationConnected, isListingPresent, refreshIntegration} from "./integration.actions"
 import { uploadImageFromUrl } from '../uploadImage';
+import { integrateReservationData } from './reservation.actions';
+import { IListing } from '../models/listing.model';
+
+
 interface Coordinates {
   latitude: string;
   longitude: string;
@@ -83,7 +87,6 @@ interface ApiResponseProperty {
   data: Property;
   
 }
-
 
 const fetchProperties = async (authKey: string, page: number, perPage: number): Promise<ApiResponseProperties> => {
   const options = {
@@ -174,7 +177,7 @@ export const mapHospitableToGeneral = async (property: Property):Promise<General
 };
 
 
-export const fetchAllPropertiesHospitable = async (authKey: string) => {
+export const fetchAllPropertiesHospitable = async (authKey: string): Promise<GeneralProperty[]> => {
   let allProperties: any[] = [];
   let page = 1;
   const perPage = 10;
@@ -209,30 +212,6 @@ export const fetchAllPropertiesHospitable = async (authKey: string) => {
   }
 };
 
-/* 
-
-async function uploadImageFromUrl(imageUrl: string) {
-  
-  const response = await fetch('/api/uploadFromUrl', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ url: imageUrl }),
-  });
-
-  const data = await response.json();
-
-  if (data.success) {
-    console.log('Image uploaded successfully:', data.url);
-    return data.fileKey;  // Return the fileKey instead of the full data
-  } else {
-    console.error('Error uploading image:', data.error);
-    throw new Error('Error uploading image');
-  }
-}
-  */
-
 
 interface UserBillingInfo {
   id: string;
@@ -257,7 +236,7 @@ interface ApiResponseUser {
 // Fonction pour récupérer les informations de l'utilisateur et de facturation
 export async function fetchUserAndBilling(apiKey: string): Promise<UserBillingInfo | null> {
   try {
-    const response = await axios.get<ApiResponseUser>('https://api.hospitable.com/user_and_billing', {
+    const response = await axios.get<ApiResponseUser>('https://public.api.hospitable.com/v2/user', {
       headers: {
         Authorization: `Bearer ${apiKey}`
       }
@@ -270,4 +249,227 @@ export async function fetchUserAndBilling(apiKey: string): Promise<UserBillingIn
   }
 }
 
- 
+//Reservation 
+interface IHospitableGuest {
+  email: string | null;
+  phone_numbers: string[];
+  first_name: string;
+  last_name: string;
+}
+
+interface IHospitableReservationStatus {
+  current: {
+    category: string;
+    sub_category: string | null;
+  };
+  history: any[];
+}
+
+interface IHospitableGuests {
+  total: number;
+  adult_count: number;
+  child_count: number;
+  infant_count: number;
+  pet_count: number;
+}
+
+interface IHospitableListing {
+  platform: string;
+  platform_id: string;
+}
+
+export interface IHospitableReservation {
+  id: string;
+  code: string;
+  platform: string;
+  platform_id: string;
+  booking_date: string;
+  arrival_date: string;
+  departure_date: string;
+  check_in: string;
+  check_out: string;
+  reservation_status: IHospitableReservationStatus;
+  guests: IHospitableGuests;
+  listings: IHospitableListing[];
+  guest: IHospitableGuest;
+  status: string;
+  status_history: any[];
+  conversation_id: string;
+}
+
+interface IHospitableReservationsResponse {
+  data: IHospitableReservation[];
+  links: {
+    first: string;
+    last: string;
+    prev: string | null;
+    next: string | null;
+  };
+  meta: {
+    current_page: number;
+    from: number;
+    last_page: number;
+    path: string;
+    per_page: number;
+    to: number;
+    total: number;
+  };
+}
+
+//Message
+interface IHospitableSender {
+  first_name: string;
+  full_name: string;
+  locale: string;
+  picture_url: string;
+  thumbnail_url: string;
+  location: string;
+}
+
+export interface IHospitableMessage {
+  platform: string;
+  platform_id: string;
+  content_type: string;
+  body: string;
+  attachments: any[];
+  sender_type: string;
+  sender_role: string | null;
+  sender: IHospitableSender;
+  created_at: string;
+}
+
+interface IHospitableMessagesResponse {
+  data: IHospitableMessage[];
+}
+
+function getDynamicDates() {
+  const now = new Date();
+  const startDate = new Date();
+  const endDate = new Date();
+
+  startDate.setMonth(now.getMonth() - 6);
+  endDate.setMonth(now.getMonth() + 6);
+
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  return {
+    start_date: formatDate(startDate),
+    end_date: formatDate(endDate)
+  };
+}
+
+export async function fetchReservations(apiKey: string, propertyId: string): Promise<IHospitableReservation[]> {
+  const headers = {
+    accept: 'application/json',
+    authorization: `Bearer ${apiKey}`
+  };
+  const { start_date, end_date } = getDynamicDates();
+  let currentPage = 1;
+  let results: IHospitableReservation[] = [];
+  let lastPage = Number.MAX_SAFE_INTEGER; // Initialiser à une grande valeur
+
+  while (currentPage <= lastPage) {
+    const url = `https://public.api.hospitable.com/v2/reservations?page=${currentPage}&per_page=10&properties[]=${propertyId}&start_date=${start_date}&end_date=${end_date}&include=guest%2Clistings&date_query=checkin`;
+    try {
+      const response: AxiosResponse<any> = await axios.get(url, { headers });
+      results = results.concat(response.data.data);
+      currentPage++;
+      lastPage = response.data.meta.last_page; // Mettre à jour lastPage selon la réponse
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error fetching reservations:', error.message);
+      } else {
+        console.error('Unknown error:', error);
+      }
+      break; // Sortir de la boucle en cas d'erreur
+    }
+  }
+
+  return results;
+}
+
+
+export async function fetchMessages(apiKey: string, reservationId: string): Promise<IHospitableMessage[]> {
+  const headers = {
+    accept: 'application/json',
+    authorization: `Bearer ${apiKey}`
+  };
+  const url = `https://public.api.hospitable.com/v2/reservations/${reservationId}/messages`;
+
+  try {
+    const response: AxiosResponse<any> = await axios.get(url, { headers });
+    return response.data.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error('Error fetching messages:', error.message);
+    } else {
+      console.error('Unknown error:', error);
+    }
+    return [];
+  }
+}
+
+export async function refreshHospitable(platform_account_id:string,userId:string){
+  const integrationObject = await refreshIntegration({ integrationId:platform_account_id });
+  const apiKey = integrationObject.apiKey;
+  if(apiKey){
+    await onboardHospitable(apiKey,platform_account_id,userId);
+  }
+}
+
+
+export async function onboardHospitable(apiKey:string,platform_account_id:string,userId:string){
+
+  try{
+          // Récupérer toutes les propriétés de l'API Hospitable
+          console.log('Fetching all properties from Hospitable API...'); // # Log avant de récupérer les propriétés
+          let properties = await fetchAllPropertiesHospitable(apiKey);
+          console.log('Propriétés récupérées et transformées:', properties.length); // # Log après récupération et transformation des propriétés
+
+          if(properties.length===0) {
+            await integrationConnected({integrationId :platform_account_id});
+            return ;
+          }
+
+          // Insérer les propriétés dans la base de données
+          console.log('Inserting all properties into the database...'); // # Log avant d'insérer les propriétés
+          const listings = await insertAllProperties(properties, platform_account_id, userId);
+          console.log('Toutes les propriétés ont été insérées avec succès dans la base de données.'); // # Log après insertion réussie des propriétés
+          console.log("properties : \t",'properties')
+          console.log("properties.length : \t",listings.length)
+          
+          for (let index = 0; index < listings.length; index++) {
+            await processReservation(apiKey,listings[index]);
+          }
+          console.log('Data synchronization completed successfully.'); // # Log après la synchronisation complète des données
+          await integrationConnected({integrationId :platform_account_id});
+        }catch (error) {
+          console.error('Error during property insertion:', error);
+          throw error;  // Pour propager l'erreur et mieux comprendre où elle se produit
+      }
+}
+
+  export async function processReservation(apiKey: string, listing: IListing) {
+    console.log(`Fetching reservations for property: ${listing.internal_id}`);
+
+    const internalId = listing.internal_id;
+
+    if (internalId) {
+      const reservations = await fetchReservations(apiKey, internalId);
+      console.log(`Réservations récupérées pour la propriété ${internalId}:`, reservations);
+
+      const messagesMap = new Map<string, IHospitableMessage[]>();
+
+      for (const reservation of reservations) {
+        console.log(`Fetching messages for reservation: ${reservation.id}`);
+        const messages = await fetchMessages(apiKey, reservation.id);
+        console.log(`Messages récupérés pour la réservation ${reservation.id}:`, messages);
+
+        messagesMap.set(reservation.id, messages);
+      }
+
+      console.log('Integrating data for reservations and messages...');
+      await integrateReservationData(reservations, messagesMap, listing);
+      console.log(`Données intégrées pour les réservations et messages de la propriété ${listing.id}.`);
+    }
+  }

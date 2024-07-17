@@ -1,16 +1,21 @@
+"use server";
 import mongoose, { Document } from "mongoose";
 import { ListingStatus } from "./listingstatus"; // Make sure this is correctly imported
+import { IPlatformAccount } from "./platform_account.model";
+import { IReservation } from "./reservation.modelt";
+import { IApartment } from "./apartment.model";
+import { IListingFeatures } from "./listing_features.model";
 
 export interface IListing extends Document {
   internal_id?: string;
   link?: string;
   platform?: string;
-  status: ListingStatus; // Using enum type from the import
-  listing_features?: mongoose.Types.ObjectId;
-  apartment?: mongoose.Types.ObjectId;
-  conversation_ID_archives: mongoose.Types.ObjectId[];
+  status: ListingStatus; 
+  listing_features?: mongoose.Types.ObjectId|IListingFeatures;
+  apartment?: mongoose.Types.ObjectId|IApartment;
+  reservations: mongoose.Types.ObjectId[]|IReservation[];
   picture?: string;
-  platform_account?: mongoose.Types.ObjectId;
+  platform_account?: mongoose.Types.ObjectId|IPlatformAccount;
   title?: string;
   created_at?: Date;
   updated_at?: Date;
@@ -34,7 +39,7 @@ const listingSchema = new Schema<IListing>({
   status: {
     type: String,
     required: true,
-    enum: Object.values(ListingStatus), // Assuming ListingStatus is an enum or object
+    enum: Object.values(ListingStatus), 
   },
   listing_features: {
     type: Schema.Types.ObjectId,
@@ -46,9 +51,9 @@ const listingSchema = new Schema<IListing>({
     ref: "Apartment",
     required: false,
   },
-  conversation_ID_archives: [{
+  reservations: [{
     type: Schema.Types.ObjectId,
-    ref: "ConversationIdArchive",
+    ref: "Reservation",
   }],
   picture: {
     type: String,
@@ -56,7 +61,7 @@ const listingSchema = new Schema<IListing>({
   },
   platform_account: {
     type: Schema.Types.ObjectId,
-    ref: "PlatformAccount", // Ensure "PlatformAccount" schema is defined somewhere
+    ref: "PlatformAccount", 
     required: false,
   },
   title: {

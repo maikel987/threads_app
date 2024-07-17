@@ -6,7 +6,7 @@ import Thread from "../models/thread.model";
 import User from "../models/user.model";
 
 import Apartment from "../models/apartment.model";
-import Listing from "../models/listing.model";
+import Listing, { IListing } from "../models/listing.model";
 import ListingFeatures, { IListingFeatures } from "../models/listing_features.model";
 
 import { revalidatePath } from "next/cache";
@@ -114,7 +114,7 @@ export async function listingStatusEvolution({internal_id}:{internal_id:string})
   }
 }
 
-export async function fetchListingAndPlatformAccount(listingId: string) {
+export async function fetchListingAndPlatformAccount(listingId: string):Promise<IListing> {
   try {
     connectToDB();
     console.log('apartmentId : \t',listingId)

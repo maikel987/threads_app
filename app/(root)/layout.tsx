@@ -7,6 +7,8 @@ import LeftSidebar from '@/components/shared/LeftSidebar';
 import RightSidebar from '@/components/shared/RightSidebar';
 import Bottombar from '@/components/shared/Bottombar';
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Toaster } from "@/components/ui/toaster"
+
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -40,6 +42,7 @@ export default function RootLayout({
 
           <Bottombar />
           <SpeedInsights />
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

@@ -55,82 +55,86 @@ export async function deleteVectors(propertyId: string, query: string) {
   }
 }
 
-export async function convertListingDataToVectors(listingData: IListingFeatures,listingId:string,propertyId:string,update:boolean=false) { 
+export async function convertListingDataToVectors(listingData: IListingFeatures, listingId: string, propertyId: string, update: boolean = false) { 
   //GOOD
-    const vectorsToUpsert: DataLine[] = [];
+  const vectorsToUpsert: DataLine[] = [];
 
-    if (listingData.checkin) {
-      vectorsToUpsert.push(await getDataLine(listingId, 'checkin', `check-in is at ${listingData.checkin}`));
-    }
-    if (listingData.checkout) {
-      vectorsToUpsert.push(await getDataLine(listingId, 'checkout', `check-out is at ${listingData.checkout}`));
-    }
-    if (listingData.sleeping) {
-      const sleepingArrangements = listingData.sleeping.map((bed, index) => `${bed}`).join(" and ");
-      vectorsToUpsert.push(await getDataLine(listingId, 'sleeping', `The apartment features ${sleepingArrangements} for guests.`));
-    }
-    if (listingData.description) {
-      if (update) await deleteVectors(propertyId,`onboard#${listingId}#description#`);
-      for (let i = 0; i < listingData.description.length; i++) {
-        vectorsToUpsert.push(await getDataLine(listingId, 'description', listingData.description[i], i));
-      }
-    }
-    if (listingData.amenities) {
-      const amenitiesDescriptions = listingData.amenities.map((amenity, index) => {
-        const formattedAmenity = amenity.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        return `${formattedAmenity} is available for guests to enhance their stay.`;
-      });
+  const promises: Promise<DataLine | void>[] = [];
 
-      if (update) await deleteVectors(propertyId,`onboard#${listingId}#amenities#`);
-      for (let i = 0; i < amenitiesDescriptions.length; i++) {
-        vectorsToUpsert.push(await getDataLine(listingId, 'amenities', amenitiesDescriptions[i], i));
-      }
+  if (listingData.checkin) {
+    promises.push(getDataLine(listingId, 'checkin', `check-in is at ${listingData.checkin}`));
+  }
+  if (listingData.checkout) {
+    promises.push(getDataLine(listingId, 'checkout', `check-out is at ${listingData.checkout}`));
+  }
+  if (listingData.sleeping) {
+    const sleepingArrangements = listingData.sleeping.map((bed, index) => `${bed}`).join(" and ");
+    promises.push(getDataLine(listingId, 'sleeping', `The apartment features ${sleepingArrangements} for guests.`));
+  }
+  if (listingData.description) {
+    if (update) promises.push(deleteVectors(propertyId, `onboard#${listingId}#description#`).then(() => undefined));
+    for (let i = 0; i < listingData.description.length; i++) {
+      promises.push(getDataLine(listingId, 'description', listingData.description[i], i));
     }
-    if (listingData.rules) {
-      const rulesDescriptions = listingData.rules.map((rule, index) => {
-          const [ruleName, ruleValue] = rule.split(": ");
-          const formattedRuleName = ruleName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          const isAllowed = ruleValue.trim() === 'true';
-      
-          if (isAllowed) {
-              return `${formattedRuleName} are allowed.`;
-          } else {
-              return `${formattedRuleName} are not allowed.`;
-          }
-      });
-      if (update) await deleteVectors(propertyId,`onboard#${listingId}#rules#`);
-      for (let i = 0; i < rulesDescriptions.length; i++) {
-          vectorsToUpsert.push(await getDataLine(listingId, 'rules', rulesDescriptions[i], i));
-      }
+  }
+  if (listingData.amenities) {
+    const amenitiesDescriptions = listingData.amenities.map((amenity, index) => {
+      const formattedAmenity = amenity.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return `${formattedAmenity} is available for guests to enhance their stay.`;
+    });
+
+    if (update) promises.push(deleteVectors(propertyId, `onboard#${listingId}#amenities#`).then(() => undefined));
+    for (let i = 0; i < amenitiesDescriptions.length; i++) {
+      promises.push(getDataLine(listingId, 'amenities', amenitiesDescriptions[i], i));
     }
-    if (listingData.bathroom) {
-      const bathroomCount = listingData.bathroom;  
-      const bathroomDescription = `The apartment has ${bathroomCount} bathroom${bathroomCount > 1 ? 's' : ''}.`;
-      vectorsToUpsert.push(await getDataLine(listingId, 'bathroom', bathroomDescription));
-    }
-    if (listingData.bed) {
-      const bedCount = listingData.bed;  // Supposons que cette variable contienne le nombre de lits
-      const bedDescription = `The apartment has ${bedCount} bed${bedCount > 1 ? 's' : ''}, ensuring comfortable sleeping arrangements for guests.`;
-      vectorsToUpsert.push(await getDataLine(listingId, 'bed', bedDescription));    
-    }
-    if (listingData.bedroom) {
-      const bedroomCount = listingData.bedroom;  // Supposons que cette variable contienne le nombre de chambres à coucher
-      let bedroomDescription;
-      if (bedroomCount === 0) {
-          bedroomDescription = "The apartment is a studio space, combining living, sleeping, and dining areas in a single open layout, ideal for maximizing space.";
+  }
+  if (listingData.rules) {
+    const rulesDescriptions = listingData.rules.map((rule, index) => {
+      const [ruleName, ruleValue] = rule.split(": ");
+      const formattedRuleName = ruleName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const isAllowed = ruleValue.trim() === 'true';
+
+      if (isAllowed) {
+        return `${formattedRuleName} are allowed.`;
       } else {
-          bedroomDescription = `The apartment features ${bedroomCount} bedroom${bedroomCount > 1 ? 's' : ''}, providing privacy and comfort for guests.`;
+        return `${formattedRuleName} are not allowed.`;
       }
-      vectorsToUpsert.push(await getDataLine(listingId, 'bedroom', bedroomDescription));
+    });
+    if (update) promises.push(deleteVectors(propertyId, `onboard#${listingId}#rules#`).then(() => undefined));
+    for (let i = 0; i < rulesDescriptions.length; i++) {
+      promises.push(getDataLine(listingId, 'rules', rulesDescriptions[i], i));
     }
-    if (listingData.guest) {
-      const guestDescription = `The apartment can comfortably accommodate up to ${listingData.guest} guests.`;
-      vectorsToUpsert.push(await getDataLine(listingId, 'guest', guestDescription));
+  }
+  if (listingData.bathroom) {
+    const bathroomCount = listingData.bathroom;  
+    const bathroomDescription = `The apartment has ${bathroomCount} bathroom${bathroomCount > 1 ? 's' : ''}.`;
+    promises.push(getDataLine(listingId, 'bathroom', bathroomDescription));
+  }
+  if (listingData.bed) {
+    const bedCount = listingData.bed;  // Supposons que cette variable contienne le nombre de lits
+    const bedDescription = `The apartment has ${bedCount} bed${bedCount > 1 ? 's' : ''}, ensuring comfortable sleeping arrangements for guests.`;
+    promises.push(getDataLine(listingId, 'bed', bedDescription));    
+  }
+  if (listingData.bedroom) {
+    const bedroomCount = listingData.bedroom;  // Supposons que cette variable contienne le nombre de chambres à coucher
+    let bedroomDescription;
+    if (bedroomCount === 0) {
+      bedroomDescription = "The apartment is a studio space, combining living, sleeping, and dining areas in a single open layout, ideal for maximizing space.";
+    } else {
+      bedroomDescription = `The apartment features ${bedroomCount} bedroom${bedroomCount > 1 ? 's' : ''}, providing privacy and comfort for guests.`;
     }
-    await pineConeManager.upsert(vectorsToUpsert.map(line => ({ id: line.id, values: line.values, metadata: line.metadata })), propertyId);
+    promises.push(getDataLine(listingId, 'bedroom', bedroomDescription));
+  }
+  if (listingData.guest) {
+    const guestDescription = `The apartment can comfortably accommodate up to ${listingData.guest} guests.`;
+    promises.push(getDataLine(listingId, 'guest', guestDescription));
+  }
+
+  const results = await Promise.all(promises);
+  vectorsToUpsert.push(...results.filter(result => result !== undefined) as DataLine[]);
+
+  await pineConeManager.upsert(vectorsToUpsert.map(line => ({ id: line.id, values: line.values, metadata: line.metadata })), propertyId);
 }
-
-
 
 export async function convertFAQToVectors(faq: string[], propertyId: string, listingId: string, conversationId: string, indexStart = 0): Promise<number> {
   const vectorsToUpsert: DataLine[] = [];

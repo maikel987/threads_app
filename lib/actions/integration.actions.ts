@@ -3,11 +3,11 @@
 import mongoose, { FilterQuery, SortOrder } from "mongoose";
 
 import Community from "../models/community.model";
-import PlatformAccount from "../models/platform_account.model";
+import PlatformAccount, { IPlatformAccount } from "../models/platform_account.model";
 import User from "../models/user.model";
 
 import { connectToDB } from "../mongoose";
-import Listing from "../models/listing.model";
+import Listing, { IListing } from "../models/listing.model";
 import { revalidatePath } from "next/cache";
 import { IntegrationStatus } from "../models/integrationStatus";
 import Apartment from "../models/apartment.model";
@@ -111,6 +111,27 @@ try {
 
 export async function refreshIntegration({
     integrationId
+  }: {integrationId: string}): Promise<IPlatformAccount> {
+    try {
+      await connectToDB();
+  
+        // Mise à jour d'un appartement existant
+        const platformAccount = await PlatformAccount.findOneAndUpdate(
+          { _id: integrationId },
+          {
+            status:IntegrationStatus.REFRESHING,
+            updated_at: new Date(),
+          }
+        );
+      revalidatePath(`/integrationhub/${integrationId}`);
+      return platformAccount;
+    } catch (error: any) {
+      throw new Error(`Failed to create/update integration: ${error.message}`);
+    }
+  }
+
+  export async function integrationConnected({
+    integrationId
   }: {integrationId: string}): Promise<void> {
     try {
       await connectToDB();
@@ -119,7 +140,7 @@ export async function refreshIntegration({
         await PlatformAccount.findOneAndUpdate(
           { _id: integrationId },
           {
-            status:IntegrationStatus.REFRESHING,
+            status:IntegrationStatus.CONNECTED,
             updated_at: new Date(),
           }
         );
@@ -166,7 +187,6 @@ export async function updateIntegration({
       if (!user) {
         throw new Error("User not found with ID: " + userId);
       }
-      console.log(userId,user._id);
 
       let integration;
 
@@ -325,8 +345,6 @@ export interface GeneralProperty {
   
 const insertPropertyData = async (property: GeneralProperty, platformAccountId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId) => {
 
-    console.log('userId from insertPropertyData',userId);
-
     const platformAccount = await PlatformAccount.findOne({ _id: platformAccountId });
 
     // Insérer dans la collection apartment
@@ -389,17 +407,22 @@ const insertPropertyData = async (property: GeneralProperty, platformAccountId: 
     });
 
     await convertListingDataToVectors(listingFeatures, listing._id.toString(), apartment._id.toString());
+    return listing
   };
   
-export const insertAllProperties = async (properties: GeneralProperty[], platformAccount_id: string, user_id:string) => {
+export const insertAllProperties = async (properties: GeneralProperty[], platformAccount_id: string, user_id:string):Promise<IListing[]> => {
     const platformAccountId = new mongoose.Types.ObjectId(platformAccount_id); 
     const userId = new mongoose.Types.ObjectId(user_id); 
+    let insertedListingIds = [];  // Tableau pour stocker les IDs des listings insérés
+
     for (const property of properties) {
-      await insertPropertyData(property, platformAccountId, userId);
+      const listingId = await insertPropertyData(property, platformAccountId, userId);
+      insertedListingIds.push(listingId);  // Ajouter l'ID du listing au tableau
     }
   
     console.log('All properties successfully inserted');
-    };
+    return insertedListingIds;  // Retourner les IDs des listings insérés
+  };
 
   // Function to check if the property ID already exists in the database
 export const isListingPresent = async (listingId: string): Promise<boolean> => {
