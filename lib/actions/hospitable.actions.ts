@@ -417,59 +417,68 @@ export async function refreshHospitable(platform_account_id:string,userId:string
   }
 }
 
+export async function onboardHospitable(apiKey: string, platform_account_id: string, userId: string) {
+  try {
+    // Récupérer toutes les propriétés de l'API Hospitable
+    console.log('Fetching all properties from Hospitable API...'); // # Log avant de récupérer les propriétés
+    const properties = await fetchAllPropertiesHospitable(apiKey);
+    console.log('Propriétés récupérées et transformées:', properties.length); // # Log après récupération et transformation des propriétés
 
-export async function onboardHospitable(apiKey:string,platform_account_id:string,userId:string){
+    if (properties.length === 0) {
+      await integrationConnected({ integrationId: platform_account_id });
+      return;
+    }
 
-  try{
-          // Récupérer toutes les propriétés de l'API Hospitable
-          console.log('Fetching all properties from Hospitable API...'); // # Log avant de récupérer les propriétés
-          let properties = await fetchAllPropertiesHospitable(apiKey);
-          console.log('Propriétés récupérées et transformées:', properties.length); // # Log après récupération et transformation des propriétés
+    // Insérer les propriétés dans la base de données
+    console.log('Inserting all properties into the database...'); // # Log avant d'insérer les propriétés
+    console.log('platform_account_id', platform_account_id);
+    console.log('userId', userId);
+    const listings = await insertAllProperties(properties, platform_account_id, userId);
+    console.log('Toutes les propriétés ont été insérées avec succès dans la base de données.'); // # Log après insertion réussie des propriétés
+    console.log("properties : \t", 'properties');
+    console.log("properties.length : \t", listings.length);
 
-          if(properties.length===0) {
-            await integrationConnected({integrationId :platform_account_id});
-            return ;
-          }
+    // Utiliser Promise.all pour paralléliser les appels à processReservation
+    const reservationPromises = listings.map(listing => processReservation(apiKey, listing));
+    await Promise.all(reservationPromises);
 
-          // Insérer les propriétés dans la base de données
-          console.log('Inserting all properties into the database...'); // # Log avant d'insérer les propriétés
-          const listings = await insertAllProperties(properties, platform_account_id, userId);
-          console.log('Toutes les propriétés ont été insérées avec succès dans la base de données.'); // # Log après insertion réussie des propriétés
-          console.log("properties : \t",'properties')
-          console.log("properties.length : \t",listings.length)
-          
-          for (let index = 0; index < listings.length; index++) {
-            await processReservation(apiKey,listings[index]);
-          }
-          console.log('Data synchronization completed successfully.'); // # Log après la synchronisation complète des données
-          await integrationConnected({integrationId :platform_account_id});
-        }catch (error) {
-          console.error('Error during property insertion:', error);
-          throw error;  // Pour propager l'erreur et mieux comprendre où elle se produit
-      }
+    console.log('Data synchronization completed successfully.'); // # Log après la synchronisation complète des données
+    await integrationConnected({ integrationId: platform_account_id });
+  } catch (error) {
+    console.error('Error during property insertion:', error);
+    throw error; // Pour propager l'erreur et mieux comprendre où elle se produit
+  }
 }
 
-  export async function processReservation(apiKey: string, listing: IListing) {
-    console.log(`Fetching reservations for property: ${listing.internal_id}`);
 
-    const internalId = listing.internal_id;
+export async function processReservation(apiKey: string, listing: IListing) {
+  console.log(`Fetching reservations for property: ${listing.internal_id}`);
 
-    if (internalId) {
+  const internalId = listing.internal_id;
+
+  if (internalId) {
+    try {
       const reservations = await fetchReservations(apiKey, internalId);
       console.log(`Réservations récupérées pour la propriété ${internalId}:`, reservations);
 
       const messagesMap = new Map<string, IHospitableMessage[]>();
 
-      for (const reservation of reservations) {
+      const messagePromises = reservations.map(async (reservation) => {
         console.log(`Fetching messages for reservation: ${reservation.id}`);
         const messages = await fetchMessages(apiKey, reservation.id);
         console.log(`Messages récupérés pour la réservation ${reservation.id}:`, messages);
 
         messagesMap.set(reservation.id, messages);
-      }
+      });
+
+      await Promise.all(messagePromises);
 
       console.log('Integrating data for reservations and messages...');
       await integrateReservationData(reservations, messagesMap, listing);
       console.log(`Données intégrées pour les réservations et messages de la propriété ${listing.id}.`);
+    } catch (error) {
+      console.error(`Error processing reservation for property ${internalId}:`, error);
     }
   }
+}
+

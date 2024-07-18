@@ -11,6 +11,7 @@ import IntegrationHeader from "@/components/shared/IntegrationHeader";
 import { getSignedImageUrl } from "@/lib/aws";
 import ListingCard3 from "@/components/cards/ListingCard3";
 import { redirect} from "next/navigation";
+import { fetchUser } from "@/lib/actions/user.actions";
 
 async function Page({ params,searchParams }: { params: { id: string },  searchParams: { [key: string]: string | undefined }}) {
   
@@ -21,6 +22,9 @@ async function Page({ params,searchParams }: { params: { id: string },  searchPa
 
   const user = await currentUser();
   if (!user) return null;
+
+  const userInfo = await fetchUser(user.id);
+  if (!userInfo?.onboarded) redirect("/onboarding");
 
   const platformAccountDetails = await fetchPlatformAccountDetails(params.id);
 
@@ -73,7 +77,7 @@ async function Page({ params,searchParams }: { params: { id: string },  searchPa
     <section>
       <IntegrationHeader
         integrationId={platformAccountDetails.id}
-        userId={user.id}
+        userId={userInfo.id}
         platform={platformAccountDetails.platform}
         username={platformAccountDetails.username ? platformAccountDetails.username : platformAccountDetails.platform_account_id}
         imgUrl={platformAccountDetails.platform in platformLogo ? platformLogo[platformAccountDetails.platform as keyof typeof platformLogo] : '/assets/missingConnection.webp'}

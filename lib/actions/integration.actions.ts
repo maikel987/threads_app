@@ -346,6 +346,7 @@ export interface GeneralProperty {
 const insertPropertyData = async (property: GeneralProperty, platformAccountId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId) => {
 
     const platformAccount = await PlatformAccount.findOne({ _id: platformAccountId });
+    console.log('platformAccount',platformAccount);
 
     // Insérer dans la collection apartment
     const apartment = await Apartment.create({
@@ -357,11 +358,13 @@ const insertPropertyData = async (property: GeneralProperty, platformAccountId: 
       updated_at: new Date(),
       urgent_number:"0000", //ICI a rajouter de puis l'import du compte
     });
+    console.log('apartment inserted...',);
   
     // Mettre à jour l'utilisateur pour inclure la référence à l'appartement
     await User.findByIdAndUpdate(userId, {
       $push: { apartments: apartment._id },
     });
+    console.log('user founded...',);
   
     // Insérer dans la collection listing
     const listing = await Listing.create({
@@ -375,13 +378,19 @@ const insertPropertyData = async (property: GeneralProperty, platformAccountId: 
       created_at: new Date(),
       updated_at: new Date(),
     });
+    console.log('listing inserted...',);
+
   
     // Mettre à jour l'appartement pour inclure la référence au listing
     await Apartment.findByIdAndUpdate(apartment._id, {
       $push: { listings: listing._id },
     });
+    console.log('apartment found and inserted...',);
+
     platformAccount.listings.push(listing._id);
     await platformAccount.save();
+
+    console.log('platform acccount updated...',);
   
     // Insérer dans la collection listingfeatures
     const listingFeatures = await ListingFeatures.create({
@@ -400,19 +409,24 @@ const insertPropertyData = async (property: GeneralProperty, platformAccountId: 
       checkin: property.checkin,
       checkout: property.checkout,
     });
-  
+    console.log('listingFeatures inserted...',);
+
     // Mettre à jour le listing pour inclure la référence aux features
     await Listing.findByIdAndUpdate(listing._id, {
       $set: { listing_features: listingFeatures._id },
     });
+    console.log('listing updated...',);
 
     await convertListingDataToVectors(listingFeatures, listing._id.toString(), apartment._id.toString());
+    console.log('convertListingDataToVectors done...',);
+
     return listing
   };
   
 export const insertAllProperties = async (properties: GeneralProperty[], platformAccount_id: string, user_id:string):Promise<IListing[]> => {
     const platformAccountId = new mongoose.Types.ObjectId(platformAccount_id); 
     const userId = new mongoose.Types.ObjectId(user_id); 
+    console.log(platformAccountId,userId);
     let insertedListingIds = [];  // Tableau pour stocker les IDs des listings insérés
 
     for (const property of properties) {
